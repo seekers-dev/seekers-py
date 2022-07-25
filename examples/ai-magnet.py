@@ -4,9 +4,6 @@ s = seekers[0]
 goal = world.nearest_goal(s.position,goals)
 dist = world.torus_distance(s.position,goal.position)
 
-#goal = goals[2]
-#dist = world.torus_distance(s.position,goal.position)
-
 if dist < 90:
     # print("** AN")
     s.set_magnet_attractive()

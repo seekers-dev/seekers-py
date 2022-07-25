@@ -3,7 +3,6 @@ import game_logic
 import utils
 import draw
 
-import sys
 import os
 import os.path
 import glob
@@ -17,6 +16,7 @@ import random
 
 speedup_factor = 7  # number of ticks calculated per frame drawn
 tournament_length = 16384  # number of ticks played in a tournament
+
 screen = None
 quit = False
 clock = None
@@ -31,6 +31,7 @@ tournament_mode = True  # whether to terminate the game after tournament_length 
 
 num_goals = 6  # total number of goals
 num_seekers = 5  # number of seekers per player
+
 
 
 def start():
@@ -48,6 +49,7 @@ def start():
     screen = pygame.display.set_mode(dimensions)
     clock = pygame.time.Clock()
     random.seed(42)  # set seed to make games reproducible
+
 
     # initialize goals
     goals = [Goal(world.random_position()) for _ in range(0, num_goals)]
@@ -264,4 +266,6 @@ def prepare_ai_input(player):
             , copy.deepcopy(world))
 
 
-start()
+
+if __name__ == "__main__":
+    start()
