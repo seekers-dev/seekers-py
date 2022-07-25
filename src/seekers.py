@@ -16,6 +16,7 @@ import copy
 import random
 
 speedup_factor = 7
+tournament_length = 16384
 screen = None
 quit = False
 clock = None
@@ -146,11 +147,11 @@ def main_loop():
     for _ in range(speedup_factor):
       call_ais()
       game_logic.tick(players, camps, goals, animations, world)
+      step += 1
     draw.draw(players, camps, goals, animations, clock, world, screen)
-    clock.tick(50)  # 20ms relative to last tick
+    clock.tick(50)  # caps the framerate to 50 fps; doesn't slow down the game if the game can't provide 50 fps
 
-    step += 1
-    if tournament_mode and step > 5_000:
+    if tournament_mode and step > tournament_length:
       for player in sorted(players, key=lambda p: p.score, reverse=True):
         print(str(player.score) + " P.:\t" + player.name)
       quit = True
