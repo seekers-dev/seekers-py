@@ -111,9 +111,8 @@ def draw_jet_stream(origin, direction, world, screen):
         , (int(b.x+dx), int(b.y+dy)))
 
   for _ in range(0, 2):
-    t = direction.rotated() * (random.uniform(-1, 1)
-          * Seeker.radius * 0.3)
-    l = Seeker.radius * (1 + math.exp(random.normalvariate(0.5, 0.2)))
+    t = Vector()
+    l = Seeker.radius * 3
     line(origin + t, origin + direction*l + t)
 
 def draw_score_animation(a, world, screen):
