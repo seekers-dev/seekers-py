@@ -15,21 +15,22 @@ import sys
 import copy
 import random
 
-speedup_factor = 7
-tournament_length = 16384
+speedup_factor = 7  # number of ticks calculated per frame drawn
+tournament_length = 16384  # number of ticks played in a tournament
 screen = None
 quit = False
 clock = None
 font = None
-world = World(768, 768)
+worldsize = 768  # size of the world
+world = World(worldsize, worldsize)
 goals = []
 players = []
 camps = []
 animations = {"score": []}
-tournament_mode = True
+tournament_mode = True  # whether to terminate the game after tournament_length ticks got played
 
-num_goals = 6
-num_seekers = 5
+num_goals = 6  # total number of goals
+num_seekers = 5  # number of seekers per player
 
 
 def start():
@@ -46,7 +47,7 @@ def start():
     dimensions = (world.width, world.height)
     screen = pygame.display.set_mode(dimensions)
     clock = pygame.time.Clock()
-    random.seed(42)
+    random.seed(42)  # set seed to make games reproducible
 
     # initialize goals
     goals = [Goal(world.random_position()) for _ in range(0, num_goals)]
@@ -67,9 +68,11 @@ def start():
 
 
 def load_players():
+    """loads player AIs"""
     global players
     global tournament_mode
 
+    # search for AIs in execution folder and ais subfolder
     if len(sys.argv) <= 1:
         for search_path in ("", "./src/ais/"):
             for filename in glob.glob(search_path + "ai*.py"):
