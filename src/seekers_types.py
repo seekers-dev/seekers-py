@@ -77,8 +77,9 @@ class Physical:
 
     def move(self, world):
         # friction
-        self.velocity.x *= 1 - self.friction
-        self.velocity.y *= 1 - self.friction
+        fact = math.sqrt(self.velocity.norm() - 2*self.friction*self.velocity.norm())/self.velocity.norm() if (self.velocity.norm() - 2*self.friction*self.velocity.norm()) > 0 else 0
+        self.velocity.x *= fact
+        self.velocity.y *= fact
         # acceleration
         self.update_acceleration(world)
         a = self.acceleration
