@@ -13,8 +13,9 @@ import pygame
 import sys
 import copy
 import random
+import time
 
-speedup_factor = 7  # number of ticks calculated per frame drawn
+speedup_factor = 128 # number of ticks calculated per frame drawn
 tournament_length = 16384  # number of ticks played in a tournament
 
 screen = None
@@ -153,6 +154,15 @@ def main_loop():
     global screen
 
     step = 0
+    t0 = time.time()
+    stri = ""
+    widths = []
+    for p in players:
+        stri += p.name + " "
+        widths.append(len(p.name))
+    stri += "tick  secs"
+    widths = widths + [6, 6]
+    print(stri)
 
     while not quit:
         handle_events()
@@ -162,6 +172,12 @@ def main_loop():
             step += 1
         draw.draw(players, camps, goals, animations, clock, world, screen)
         clock.tick(50)  # caps the framerate to 50 fps; doesn't slow down the game if the game can't provide 50 fps
+
+        stri = ""
+        for i, p in enumerate(players):
+            stri = stri + str(p.score).rjust(widths[i])
+        stri = stri + str(step).rjust(6) + str(round(time.time() - t0, ndigits=1)).rjust(6)
+        print(stri)
 
         if tournament_mode and step > tournament_length:
             for player in sorted(players, key=lambda p: p.score, reverse=True):
