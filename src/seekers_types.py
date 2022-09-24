@@ -66,9 +66,9 @@ class Vector:
 
 class Physical:
     mass = 1
-    friction = 0.02
+    friction = 0.01
     max_speed = 5
-    base_thrust = max_speed * friction
+    base_thrust = 0.05#max_speed - math.sqrt(max_speed**2 - 2*friction*max_speed)
 
     def __init__(self, position: Vector, velocity=Vector(0, 0)):
         self.position = Vector(position.x, position.y)
@@ -77,13 +77,16 @@ class Physical:
 
     def move(self, world):
         # friction
-        self.velocity.x *= 1 - self.friction
-        self.velocity.y *= 1 - self.friction
+        fact = math.sqrt(self.velocity.norm()**2 - 2*self.friction*self.velocity.norm())/self.velocity.norm() \
+            if (self.velocity.norm()**2 - 2*self.friction*self.velocity.norm()) > 0 else 0
+        self.velocity.x *= fact
+        self.velocity.y *= fact
         # acceleration
         self.update_acceleration(world)
         a = self.acceleration
-        self.velocity.x += a.x * self.thrust()
-        self.velocity.y += a.y * self.thrust()
+        acc_fact = math.sqrt(self.velocity.norm()**2 + 2*self.base_thrust) - self.velocity.norm()
+        self.velocity.x += a.x * acc_fact
+        self.velocity.y += a.y * acc_fact
         # displacement
         self.position.x += self.velocity.x
         self.position.y += self.velocity.y

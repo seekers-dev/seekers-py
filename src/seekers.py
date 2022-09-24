@@ -13,22 +13,26 @@ import pygame
 import sys
 import copy
 import random
+import time
 
-speedup_factor = 7
-tournament_length = 16384
+speedup_factor = 128 # number of ticks calculated per frame drawn
+tournament_length = 16384  # number of ticks played in a tournament
+
 screen = None
 quit = False
 clock = None
 font = None
-world = World(768, 768)
+worldsize = 768  # size of the world
+world = World(worldsize, worldsize)
 goals = []
 players = []
 camps = []
 animations = {"score": []}
-tournament_mode = True
+tournament_mode = True  # whether to terminate the game after tournament_length ticks got played
 
-num_goals = 6
-num_seekers = 5
+num_goals = 6  # total number of goals
+num_seekers = 5  # number of seekers per player
+
 
 
 def start():
@@ -45,7 +49,8 @@ def start():
     dimensions = (world.width, world.height)
     screen = pygame.display.set_mode(dimensions)
     clock = pygame.time.Clock()
-    random.seed(42)
+    random.seed(42)  # set seed to make games reproducible
+
 
     # initialize goals
     goals = [Goal(world.random_position()) for _ in range(0, num_goals)]
@@ -66,9 +71,11 @@ def start():
 
 
 def load_players():
+    """loads player AIs"""
     global players
     global tournament_mode
 
+    # search for AIs in execution folder and ais subfolder
     if len(sys.argv) <= 1:
         for search_path in ("", "./src/ais/"):
             for filename in glob.glob(search_path + "ai*.py"):
@@ -87,7 +94,7 @@ def load_player(filename):
 
 
 def load_ai(filename):
-    def dummy_decide(mySeekers, other_seekers, all_seekers, goals, other_players, own_camp, camps, world):
+    def dummy_decide(mySeekers, other_seekers, all_seekers, goals, otherPlayers, own_camp, camps, world):
         for s in mySeekers:
             s.target = s.position
         return mySeekers
@@ -96,11 +103,11 @@ def load_ai(filename):
         return utils.fmap(lambda l: " " + l, lines)
 
     def mogrify(code):
-        if code.startswith("# bot"):
+        if code.startswith("#bot"):
             prelude = []
             lines = code.split("\n")
             seekerdef = [
-                "def decide(seekers, other_seekers, all_seekers, goals, other_players, own_camp, camps, world):"]
+                "def decide(seekers, other_seekers, all_seekers, goals, otherPlayers, own_camp, camps, world):"]
             seekerret = ["return seekers"]
             lines = seekerdef + indent(prelude + lines[1:] + seekerret)
             return "\n".join(lines)
@@ -147,6 +154,15 @@ def main_loop():
     global screen
 
     step = 0
+    t0 = time.time()
+    stri = ""
+    widths = []
+    for p in players:
+        stri += p.name + " "
+        widths.append(len(p.name))
+    stri += "tick  secs"
+    widths = widths + [6, 6]
+    print(stri)
 
     while not quit:
         handle_events()
@@ -156,6 +172,12 @@ def main_loop():
             step += 1
         draw.draw(players, camps, goals, animations, clock, world, screen)
         clock.tick(50)  # caps the framerate to 50 fps; doesn't slow down the game if the game can't provide 50 fps
+
+        stri = ""
+        for i, p in enumerate(players):
+            stri = stri + str(p.score).rjust(widths[i])
+        stri = stri + str(step).rjust(6) + str(round(time.time() - t0, ndigits=1)).rjust(6)
+        print(stri)
 
         if tournament_mode and step > tournament_length:
             for player in sorted(players, key=lambda p: p.score, reverse=True):
@@ -258,6 +280,7 @@ def prepare_ai_input(player):
             , other_players
             , copy.deepcopy(camps)
             , copy.deepcopy(world))
+
 
 
 if __name__ == "__main__":
