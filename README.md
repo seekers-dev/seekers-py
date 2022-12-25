@@ -1,7 +1,7 @@
 # seekers
 * An artificial intelligence programming challenge targeted at students.
 * AIs compete by controlling bouncy little circles ("seekers") trying to collect the most goals.
-* Based on Python 3 and pygame.
+* Based on Python 3.10 and pygame.
 
 ![Screenshot_20221213_193620](https://user-images.githubusercontent.com/37810842/207417325-30e82c8b-b53b-44e7-9d41-ca431dc579e2.png)
 
@@ -17,7 +17,7 @@
      * useful for debugging/AI-developement
 
 ## How to run
-Install python3 and the packages in [`requirements.txt`](requirements.txt).
+Install python3.10 and the packages in [`requirements.txt`](requirements.txt).
 
 ### Run a Python Seekers game (and a gRPC server)
 This will:
