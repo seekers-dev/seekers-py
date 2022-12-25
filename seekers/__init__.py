@@ -36,14 +36,16 @@ class SeekersGame:
         self.world = World(*self.config.map_dimensions)
         self.goals = []
         self.camps = []
+
+        self.renderer = draw.GameRenderer(config)
         self.animations = []
+
         self.ticks = 0
 
     def start(self):
         """Start the game. Run the mainloop and block until the game is over."""
         self._logger.info("Starting game.")
 
-        self.screen = pygame.display.set_mode(self.config.map_dimensions)
         self.clock = pygame.time.Clock()
 
         random.seed(42)
@@ -63,7 +65,7 @@ class SeekersGame:
         self.camps = self.world.generate_camps(self.players.values())
 
         # prepare graphics
-        draw.init(self.players.values())
+        self.renderer.init(self.players.values())
 
         if self.grpc:
             self.grpc.start_game()
@@ -99,8 +101,7 @@ class SeekersGame:
                     break
 
             # draw graphics
-            draw.draw(self.players.values(), self.camps, self.goals, self.animations, self.clock, self.world,
-                      self.screen)
+            self.renderer.draw(self.players.values(), self.camps, self.goals, self.animations, self.clock)
 
             self.clock.tick(self.config.global_fps)
 

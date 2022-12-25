@@ -784,3 +784,11 @@ class Camp:
 
     def to_ai_input(self, owner: Player) -> "Camp":
         return Camp(self.id, owner, self.position, self.width, self.height)
+
+    @property
+    def top_left(self) -> Vector:
+        return self.position - Vector(self.width, self.height) / 2
+
+    @property
+    def bottom_right(self) -> Vector:
+        return self.position + Vector(self.width, self.height) / 2
