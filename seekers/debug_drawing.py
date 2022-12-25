@@ -1,8 +1,10 @@
 import abc
 import dataclasses
 import typing
-from contextvars import ContextVar
 import pygame
+from contextvars import ContextVar
+
+from seekers import Vector
 
 
 @dataclasses.dataclass
@@ -10,9 +12,6 @@ class DebugDrawing(abc.ABC):
     @abc.abstractmethod
     def draw(self, surface: pygame.Surface):
         ...
-
-
-from seekers import Vector
 
 
 @dataclasses.dataclass
@@ -30,7 +29,6 @@ class TextDebugDrawing(DebugDrawing):
         text_surface = self.font.render(self.text, True, self.color)
         text_rect = text_surface.get_rect(center=tuple(self.position))
         surface.blit(text_surface, text_rect)
-
 
 
 @dataclasses.dataclass

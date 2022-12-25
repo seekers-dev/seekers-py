@@ -1,9 +1,8 @@
 import pygame
+from typing import Iterable
 
 from .hash_color import interpolate_color
 from .seekers_types import *
-
-from typing import Iterable
 
 player_name_images = {}
 font = None
@@ -160,9 +159,8 @@ def draw_jet_stream(seeker: InternalSeeker, direction: Vector, world: World, scr
             pygame.draw.line(screen, [255, 255, 255], (int(a.x + dx), int(a.y + dy)), (int(b.x + dx), int(b.y + dy)))
 
     for _ in range(0, 2):
-        t = Vector()
-        l = seeker.radius * 3
-        line(seeker.position + t, seeker.position + direction * l + t)
+        length = seeker.radius * 3
+        line(seeker.position, seeker.position + direction * length)
 
 
 def repetition_offsets(world: World):
