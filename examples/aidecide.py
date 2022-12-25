@@ -1,18 +1,11 @@
-from seekers_types import *
-
-tick = 0
-
-
 # function definition
 def foo(x):
     return foo(abs(x) - 1) if x != 0 else 0
 
 
-def decide(seekers, other_seekers, all_seekers, goals, otherPlayers, own_camp, camps, world):
-    """this function gets called every tick the game processes;
-       only the target and the magnet state of the seekers you returned affect the game"""
-    global tick  # global variable
-    tick += 1
+def decide(seekers, other_seekers, all_seekers, goals, otherPlayers, own_camp, camps, world, tick):
+    """This function gets called every tick the game processes;
+    Only the target and the magnet state of the seekers you returned affect the game"""
     # print(tick)
     # print(foo(tick))
 
