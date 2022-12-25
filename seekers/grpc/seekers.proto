@@ -1,0 +1,105 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option optimize_for = SPEED;
+option java_package = "org.seekers.grpc";
+option java_outer_classname = "SeekersProto";
+option objc_class_prefix = "API";
+
+package world;
+
+service Seekers {
+  rpc JoinSession(SessionRequest) returns (SessionReply);
+  rpc PropertiesInfo(PropertiesRequest) returns (PropertiesReply);
+  rpc EntityStatus(EntityRequest) returns (EntityReply);
+  rpc PlayerStatus(PlayerRequest) returns (PlayerReply);
+  rpc CommandUnit(CommandRequest) returns (CommandReply);
+}
+
+message SessionRequest {
+  string token = 1;
+}
+
+message SessionReply {
+  string id = 1;
+}
+
+message PropertiesRequest {
+
+}
+
+message PropertiesReply {
+  map<string, string> entries = 1;
+}
+
+message EntityRequest {
+
+}
+
+message EntityReply {
+  map<string, SeekerStatus> seekers = 1;
+  map<string, GoalStatus> goals = 2;
+  double passed_playtime = 3;
+}
+
+message PlayerRequest {
+
+}
+
+message PlayerReply {
+  map<string, PlayerStatus> players = 1;
+  map<string, CampStatus> camps = 2;
+}
+
+message CommandRequest {
+  string id = 1;
+  string token = 2;
+  Vector target = 3;
+  double magnet = 4;
+}
+
+message CommandReply {
+
+}
+
+message GoalStatus {
+  PhysicalStatus super = 1;
+  string camp_id = 2;
+  double time_owned = 3;
+}
+
+message PlayerStatus {
+  string id = 1;
+  string camp_id = 2;
+  repeated string seeker_ids = 3;
+  string color = 4;
+  int32 score  = 5;
+}
+
+message CampStatus {
+  string id = 1;
+  string player_id = 2;
+  Vector position = 3;
+  double width = 4;
+  double height = 5;
+}
+
+message SeekerStatus {
+  PhysicalStatus super = 1;
+  string player_id = 2;
+  double magnet = 3;
+  Vector target = 4;
+  double disable_counter = 5;
+}
+
+message PhysicalStatus {
+  string id = 1;
+  Vector acceleration = 2;
+  Vector position = 3;
+  Vector velocity = 4;
+}
+
+message Vector {
+  double x = 1;
+  double y = 2;
+}

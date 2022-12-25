@@ -2,12 +2,13 @@ import random
 
 
 # assign a nice color to a string by hashing it
-def string_hash_color(string):
+def string_hash_color(string) -> tuple[int, int, int]:
     original_state = random.getstate()
     random.seed(string.encode())
     hue = random.uniform(0, 1)
     random.setstate(original_state)
-    return hue_color(hue)
+    # noinspection PyTypeChecker
+    return tuple(map(int, hue_color(hue)))
 
 
 # make a nice color from a hue given as a number between 0 and 1
