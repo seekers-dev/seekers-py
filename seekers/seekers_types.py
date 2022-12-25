@@ -45,6 +45,7 @@ class Config:
 
     physical_max_speed: float
     physical_friction: float
+    physical_experimental_friction: bool
 
     seeker_magnet_slowdown: float
     seeker_disabled_time: int
@@ -86,6 +87,7 @@ class Config:
 
             physical_max_speed=cp.getfloat("physical", "max-speed"),
             physical_friction=cp.getfloat("physical", "friction"),
+            physical_experimental_friction=cp.getboolean("physical", "experimental-friction", fallback=False),
 
             seeker_magnet_slowdown=cp.getfloat("seeker", "magnet-slowdown"),
             seeker_disabled_time=cp.getint("seeker", "disabled-time"),
@@ -232,12 +234,29 @@ class Physical:
         return self.config.physical_max_speed * self.config.physical_friction
 
     def move(self, world: "World"):
+        if self.config.physical_experimental_friction:
+            vel_fact = (
+                math.sqrt(
+                    self.velocity.length() ** 2 - 2 * self.config.physical_friction * self.velocity.length()
+                ) / self.velocity.length()
+
+                if (self.velocity.length() ** 2 - 2 * self.config.physical_friction * self.velocity.length()) > 0
+                else 0
+            )
+
+            acc_fact = math.sqrt(
+                self.velocity.length() ** 2 + 2 * self.thrust()
+            ) - self.velocity.length()
+        else:
+            vel_fact = 1 - self.config.physical_friction
+            acc_fact = self.thrust()
+
         # friction
-        self.velocity *= 1 - self.config.physical_friction
+        self.velocity *= vel_fact
 
         # acceleration
         self.update_acceleration(world)
-        self.velocity += self.acceleration * self.thrust()
+        self.velocity += self.acceleration * acc_fact
 
         # displacement
         self.position += self.velocity
