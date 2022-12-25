@@ -480,7 +480,7 @@ class LocalPlayerAI:
     decide_function: DecideCallable
 
     @staticmethod
-    def get_decide_function(filepath: str):
+    def get_decide_function(filepath: str) -> DecideCallable:
         try:
             with open(filepath) as f:
                 code = f.readlines()
