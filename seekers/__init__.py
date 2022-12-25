@@ -37,7 +37,7 @@ class SeekersGame:
         self.goals = []
         self.camps = []
 
-        self.renderer = draw.GameRenderer(config)
+        self.renderer = draw.GameRenderer(config, debug)
         self.animations = []
 
         self.ticks = 0

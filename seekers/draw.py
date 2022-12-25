@@ -36,13 +36,15 @@ class ScoreAnimation(Animation):
 
 
 class GameRenderer:
-    def __init__(self, config: Config):
+    def __init__(self, config: Config, debug_mode: bool = False):
         self.font = pygame.font.SysFont("monospace", 20, bold=True)
         self.background_color = (0, 0, 30)
 
         self.player_name_images = {}
         self.screen = None
+
         self.config = config
+        self.debug_mode = debug_mode
 
     def init(self, players: Iterable[InternalPlayer]):
         for p in players:
@@ -116,8 +118,8 @@ class GameRenderer:
 
         # draw seekers
         for player in players:
-            for seeker in player.seekers.values():
-                self.draw_seeker(seeker, player)
+            for i, seeker in enumerate(player.seekers.values()):
+                self.draw_seeker(seeker, player, str(i))
 
             for debug_drawing in player.debug_drawings:
                 debug_drawing.draw(self.screen)
@@ -132,19 +134,16 @@ class GameRenderer:
         # update display
         pygame.display.flip()
 
-    def draw_seeker(self, seeker, player):
+    def draw_seeker(self, seeker: InternalSeeker, player: InternalPlayer, debug_str: str):
         color = player.color
         if seeker.is_disabled:
             color = interpolate_color(color, [0, 0, 0], 0.5)
 
-        # if player.ai.is_dummy:
-        #     color = interpolate_color(color, [1, 1, 1], 0.5)
-
         self.draw_circle(color, seeker.position, seeker.radius, width=0)
         self.draw_halo(seeker, color)
 
-        # if world.debug_mode:
-        #     draw_text(seeker.id, [255, 255, 255], pos, screen)
+        if self.debug_mode:
+            self.draw_text(debug_str, (255, 255, 255), seeker.position)
 
     def draw_halo(self, seeker: InternalSeeker, color: Color):
         if seeker.is_disabled:
