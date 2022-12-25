@@ -87,11 +87,11 @@ class GrpcSeekersClient:
     """A client for a Seekers gRPC game. It contains a ``GrpcSeekersRawClient`` and implements a mainloop.
     The ``decide_function`` is called in a loop and the output of that function is sent to the server."""
 
-    def __init__(self, token: str, decide_function: seekers.DecideCallable, address: str = "localhost:7777",
+    def __init__(self, token: str, player_ai: seekers.LocalPlayerAI, address: str = "localhost:7777",
                  safe_mode: bool = False):
         self._logger = logging.getLogger(self.__class__.__name__)
 
-        self.decide_function = decide_function
+        self.player_ai = player_ai
         self.client = GrpcSeekersRawClient(token, address)
 
         self.safe_mode = safe_mode
@@ -101,6 +101,8 @@ class GrpcSeekersClient:
         self._server_config: None | seekers.Config = None
         self._player_reply: None | tuple[dict[str, seekers.Player], dict[str, seekers.Camp]] = None
         self._last_seekers: dict[str, seekers.Seeker] = {}
+
+        self._last_time_ai_updated = time.perf_counter()
 
     def join(self):
         self._logger.info(f"Joining session with token={self.client.token!r}")
@@ -261,7 +263,12 @@ class GrpcSeekersClient:
 
         ai_input = self.get_ai_input()
 
-        new_seekers = self.decide_function(*ai_input)
+        t = time.perf_counter()
+        if t - self._last_time_ai_updated > 1:
+            self.player_ai.update()
+            self._last_time_ai_updated = t
+
+        new_seekers = self.player_ai.decide_function(*ai_input)
 
         self.send_updates(new_seekers)
 

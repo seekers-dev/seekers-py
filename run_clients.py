@@ -36,15 +36,15 @@ def main():
         name = ai_name(arg)
 
         def run_ai(filepath: str, name: str):
-            decide_func = seekers.LocalPlayerAI.get_decide_function(filepath)
-
             logging.basicConfig(
                 level=args.loglevel, style="{", format=f"[{name.ljust(18)}] {{levelname}}: {{message}}",
                 stream=sys.stdout, force=True
             )
 
+            ai = seekers.LocalPlayerAI.from_file(filepath)
+
             try:
-                seekers.grpc.GrpcSeekersClient(name, decide_func, args.address).run()
+                seekers.grpc.GrpcSeekersClient(name, ai, args.address).run()
             except seekers.grpc.ServerUnavailableError:
                 logging.error("Server unavailable. Check that it's running and that the address is correct.")
             except seekers.grpc.GameFullError:
