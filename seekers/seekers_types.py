@@ -264,9 +264,9 @@ class Physical:
         world.normalize_position(self.position)
 
     def collision(self, other: "InternalPhysical", world: "World"):
+        # elastic collision
         min_dist = self.radius + other.radius
 
-        # elastic collision
         d = world.torus_difference(self.position, other.position)
 
         dn = d.normalized()
@@ -681,7 +681,9 @@ class GRPCClientPlayer(InternalPlayer):
         was_updated = self.was_updated.wait(timeout)
 
         if not was_updated:
-            raise TimeoutError(f"GRPCClientPlayer {self.name!r} did not update in time. (Timeout is {timeout} seconds)")
+            raise TimeoutError(
+                f"GRPCClientPlayer {self.name!r} did not update in time. (Timeout is {timeout} seconds.)"
+            )
 
         self.was_updated.clear()
 
