@@ -1,11 +1,10 @@
 import pygame
-from typing import Iterable, Callable
-
+from typing import Iterable, Callable, Union
 
 from .hash_color import interpolate_color
 from .seekers_types import *
 
-Color = tuple[int, int, int] | list[int]
+Color = Union[tuple[int, int, int], list[int]]
 
 
 class Animation(abc.ABC):

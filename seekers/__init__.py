@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from .seekers_types import *
 from . import game_logic, draw
 

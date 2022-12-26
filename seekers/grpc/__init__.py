@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import grpc
 from grpc._channel import _InactiveRpcError
 from concurrent.futures import ThreadPoolExecutor
