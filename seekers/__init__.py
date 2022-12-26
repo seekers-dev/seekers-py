@@ -64,7 +64,7 @@ class SeekersGame:
             }
 
         # set up camps
-        self.camps = self.world.generate_camps(self.players.values())
+        self.camps = self.world.generate_camps(self.players.values(), self.config)
 
         # prepare graphics
         self.renderer.init(self.players.values())
