@@ -1,3 +1,5 @@
+[![Python Version Compatibility](https://github.com/seekers-dev/seekers/actions/workflows/python-app.yml/badge.svg)](https://github.com/seekers-dev/seekers/actions/workflows/python-app.yml)
+
 # seekers
 * An artificial intelligence programming challenge targeted at students.
 * AIs compete by controlling bouncy little circles ("seekers") trying to collect the most goals.
