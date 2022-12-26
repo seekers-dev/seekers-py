@@ -758,16 +758,21 @@ class World:
         return Vector(random.uniform(0, self.width),
                       random.uniform(0, self.height))
 
-    def gen_camp(self, n, i, player: Player):
-        r = self.diameter() / 4
-        width = height = r / 5
+    def generate_camps(self, players: typing.Collection[Player], config: Config) -> list["Camp"]:
+        delta_x = self.width / len(players)
 
-        pos = self.middle() + Vector.from_polar(2 * math.pi * i / n) * r
-        return Camp(get_id("Camp"), player, pos, width, height)
+        if config.camp_width > delta_x:
+            raise ValueError("Config value camp.width is too large. The camps would overlap. It must be smaller than "
+                             "the width of the world divided by the number of players. ")
 
-    def generate_camps(self, players: typing.Collection[Player]) -> list["Camp"]:
         for i, player in enumerate(players):
-            camp = self.gen_camp(len(players), i, player)
+            camp = Camp(
+                id=get_id("Camp"),
+                owner=player,
+                position=Vector(delta_x * (i - 0.5), self.height / 2),
+                width=config.camp_width,
+                height=config.camp_height,
+            )
             player.camp = camp
 
         return [player.camp for player in players]
