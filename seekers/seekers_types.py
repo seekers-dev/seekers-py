@@ -13,7 +13,7 @@ import typing
 from multiprocessing.pool import ThreadPool
 from collections import defaultdict
 
-from .hash_color import string_hash_color
+from . import Color
 
 _IDS = defaultdict(list)
 
@@ -38,6 +38,7 @@ class Config:
     global_players: int
     global_seekers: int
     global_goals: int
+    global_color_threshold: float
 
     map_width: int
     map_height: int
@@ -80,6 +81,7 @@ class Config:
             global_players=cp.getint("global", "players"),
             global_seekers=cp.getint("global", "seekers"),
             global_goals=cp.getint("global", "goals"),
+            global_color_threshold=cp.getfloat("global", "color-threshold"),
 
             map_width=cp.getint("map", "width"),
             map_height=cp.getint("map", "height"),
@@ -447,11 +449,11 @@ DecideCallable = typing.Callable[
 class Player:
     id: str
     name: str
-    color: tuple[int, int, int]
     score: int
     seekers: dict[str, Seeker]
 
-    camp: "Camp" = dataclasses.field(init=False, default=None)
+    color: Color | None = dataclasses.field(init=False, default=None)
+    camp: typing.Union["Camp", None] = dataclasses.field(init=False, default=None)
 
 
 @dataclasses.dataclass
@@ -461,7 +463,7 @@ class InternalPlayer(Player):
     debug_drawings: list = dataclasses.field(init=False, default_factory=list)
 
     def to_ai_input(self) -> Player:
-        player = Player(self.id, self.name, self.color, self.score, {})
+        player = Player(self.id, self.name, self.score, {})
         player.seekers = {id_: s.to_ai_input(player) for id_, s in self.seekers.items()}
         player.camp = self.camp.to_ai_input(player)
 
@@ -660,7 +662,6 @@ class LocalPlayer(InternalPlayer):
         return LocalPlayer(
             id=get_id("Player"),
             name=name,
-            color=string_hash_color(name),
             score=0,
             seekers={},
             ai=LocalPlayerAI.from_file(filepath)
