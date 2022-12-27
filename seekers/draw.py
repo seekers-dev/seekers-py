@@ -1,7 +1,5 @@
-import math
-
 import pygame
-from typing import Iterable, Callable, Union
+from typing import Iterable, Callable, Union, Collection
 
 from .hash_color import interpolate_color
 from .seekers_types import *
@@ -97,7 +95,7 @@ class GameRenderer:
             p1, p2
         )
 
-    def draw(self, players: Iterable[InternalPlayer], camps: Iterable[Camp], goals: Iterable[InternalGoal],
+    def draw(self, players: Collection[InternalPlayer], camps: Iterable[Camp], goals: Iterable[InternalGoal],
              animations: list[Animation], clock: pygame.time.Clock):
         # clear screen
         self.screen.fill(self.background_color)
@@ -131,16 +129,9 @@ class GameRenderer:
 
         # draw information (player's scores, etc.)
         self.draw_information(players, Vector(10, 10), clock)
-        if self.debug_mode and len(players) == 2:
-            from scipy import stats
-            score0 = list(players)[0].score
-            score1 = list(players)[1].score
-            t, p = stats.ttest_1samp([1]*score0 + [0]*score1, 0.5)
-            self.draw_text(f"{p:.2e}",(255,255,255),Vector(100,100))
+
         # update display
         pygame.display.flip()
-
-
 
     def draw_seeker(self, seeker: InternalSeeker, player: InternalPlayer, debug_str: str):
         color = player.color
@@ -172,7 +163,7 @@ class GameRenderer:
 
         self.draw_line((255, 255, 255), seeker.position, seeker.position + direction * length)
 
-    def draw_information(self, players: Iterable[InternalPlayer], pos: Vector, clock: pygame.time.Clock):
+    def draw_information(self, players: Collection[InternalPlayer], pos: Vector, clock: pygame.time.Clock):
         # draw fps
         fps = int(clock.get_fps())
         self.draw_text(str(fps), (250, 250, 250), pos, center=False)
@@ -184,3 +175,12 @@ class GameRenderer:
             self.draw_text(str(p.score), p.color, pos, center=False)
             self.screen.blit(self.player_name_images[p.name], tuple(pos + dx))
             pos += dy
+
+        # draw student's t-test
+        if self.debug_mode and len(players) == 2:
+            from scipy import stats
+
+            score0 = list(players)[0].score
+            score1 = list(players)[1].score
+            t, p = stats.ttest_1samp([1] * score0 + [0] * score1, 0.5)
+            self.draw_text(f"{p:.2e}", (255, 255, 255), Vector(100, 100))
