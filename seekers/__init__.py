@@ -111,7 +111,7 @@ class SeekersGame:
 
             self.clock.tick(self.config.global_fps)
 
-        self._logger.info(f"Game over. (Ticks: {self.ticks})")
+        self._logger.info(f"Game over. (Ticks: {self.ticks:_})")
 
         self.print_scores()
 
