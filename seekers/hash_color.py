@@ -43,8 +43,6 @@ def pick_new(old: list[Color], new: Color, threshold: float = 200) -> Color:
     if len(old) == 0:
         return new
 
-    scatter = 2 * threshold / 3
-
     _new = new
     max_distance = 0
     max_distance_color = new
@@ -56,6 +54,8 @@ def pick_new(old: list[Color], new: Color, threshold: float = 200) -> Color:
         if d > max_distance:
             max_distance = d
             max_distance_color = _new
+
+        scatter = 2 * (threshold - d) / 3
 
         _new = tuple(map(
             lambda x: min(255, max(0, int(x + random.uniform(-scatter, scatter)))),
