@@ -115,10 +115,10 @@ def convert_player(player: types._PlayerStatus) -> seekers.Player:
     out = seekers.Player(
         id=player.id,
         name=f"<{player.id}>",
-        color=convert_color(player.color),
         score=player.score,
         seekers={}
     )
+    out.color = convert_color(player.color),
 
     return out
 
