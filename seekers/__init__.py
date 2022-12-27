@@ -23,11 +23,13 @@ class SeekersGame:
     """A Seekers game. Manages the game logic, players, the gRPC server and graphics."""
 
     def __init__(self, local_ai_locations: typing.Iterable[str], config: Config,
-                 grpc_address: typing.Literal[False] | str = "localhost:7777", debug: bool = True):
+                 grpc_address: typing.Literal[False] | str = "localhost:7777", seed: float = 42,
+                 debug: bool = True):
         self._logger = logging.getLogger("SeekersGame")
 
         self.config = config
         self.debug = debug
+        self.seed = seed
 
         if grpc_address:
             from .grpc import GrpcSeekersServer
@@ -47,11 +49,11 @@ class SeekersGame:
 
     def start(self):
         """Start the game. Run the mainloop and block until the game is over."""
-        self._logger.info("Starting game.")
+        self._logger.info(f"Starting game. (Seed: {self.seed})")
 
         self.clock = pygame.time.Clock()
 
-        random.seed(42)
+        random.seed(self.seed)
 
         # initialize goals
         self.goals = [InternalGoal(get_id("Goal"), self.world.random_position(), Vector(), self.config) for _ in
