@@ -1,5 +1,5 @@
 import pygame
-from typing import Iterable, Callable, Union, Collection
+from typing import Iterable, Callable, Collection
 
 from .hash_color import interpolate_color
 from .seekers_types import *
@@ -194,7 +194,11 @@ class GameRenderer:
             pos += dy
 
         # draw student's t-test
-        if self.config.flags_t_test and len(players) == 2:
-            p = self.students_ttest(players)
+        if self.config.flags_t_test:
+            if len(players) == 2 and all(p.score > 0 for p in players):
+                p = self.students_ttest(players)
+                text = f"{p:.2e}"
+            else:
+                text = "N/A"
 
-            self.draw_text(f"{p:.2e}", (255, 255, 255), Vector(100, 100))
+            self.draw_text(f"T-Test: {text}", (255, 255, 255), pos, center=False)
