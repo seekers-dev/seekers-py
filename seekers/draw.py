@@ -166,13 +166,16 @@ class GameRenderer:
         if len(players) != 2:
             raise ValueError("Students t-test only works with 2 players.")
 
-        # noinspection PyPackageRequirements
-        from scipy import stats
-
         players = iter(players)
 
         score0 = next(players).score
         score1 = next(players).score
+
+        if score0 == 0 or score1 == 0:
+            return float("nan")
+
+        # noinspection PyPackageRequirements
+        from scipy import stats
 
         t, p = stats.ttest_1samp([1] * score0 + [0] * score1, 0.5)
         return p

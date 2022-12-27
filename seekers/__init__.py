@@ -169,7 +169,7 @@ class SeekersGame:
         for player in sorted(self.players.values(), key=lambda p: p.score, reverse=True):
             print(f"{player.score} P.:\t{player.name}")
 
-        if self.config.flags_t_test:
+        if self.config.flags_t_test and len(self.players) == 2:
             p = self.renderer.students_ttest(self.players.values())
             print(f"Probability that both AIs are equally good: {p:.2e} ({p:.2%})")
 
