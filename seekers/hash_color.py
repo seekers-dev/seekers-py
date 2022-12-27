@@ -7,10 +7,9 @@ Color = typing.Union[tuple[int, int, int], list[int]]
 
 def string_hash_color(string) -> Color:
     """Assign a nice color to a string by hashing it."""
-    original_state = random.getstate()
-    random.seed(string.encode())
-    hue = random.uniform(0, 1)
-    random.setstate(original_state)
+    rng = random.Random(string.encode())
+    hue = rng.uniform(0, 1)
+
     return list(map(int, hue_color(hue)))
 
 
