@@ -68,7 +68,7 @@ class GameRenderer:
     def draw_text(self, text: str, color: Color, pos: Vector, center=True):
         dx, dy = self.font.size(text)
         adj_pos = pos - Vector(dx, dy) / 2 if center else pos
-        self.screen.blit(self.font.render(text, False, color), tuple(adj_pos))
+        self.screen.blit(self.font.render(text, True, color), tuple(adj_pos))
 
         # no torus drawing for text
 
@@ -78,7 +78,7 @@ class GameRenderer:
         # noinspection PyShadowingNames
         def draw_aacircle(screen: pygame.Surface, pos: Vector, radius: int, color: Color, width: int = 0):
             if width == 0:
-                # draw a not anti-aliased filled circle and then an anti-aliased, non-filled circle on top
+                # draw a non anti-aliased filled circle and then an anti-aliased, non-filled circle on top
                 pygame.draw.circle(screen, color, tuple(pos), radius, width=0)
                 pygame.gfxdraw.aacircle(screen, int(pos.x), int(pos.y), radius, color)
                 pygame.gfxdraw.aacircle(screen, int(pos.x), int(pos.y), radius - 1, color)
