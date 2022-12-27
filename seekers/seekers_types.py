@@ -775,7 +775,7 @@ class World:
             camp = Camp(
                 id=get_id("Camp"),
                 owner=player,
-                position=Vector(delta_x * (i - 0.5), self.height / 2),
+                position=Vector(delta_x * (i + 0.5), self.height / 2),
                 width=config.camp_width,
                 height=config.camp_height,
             )
