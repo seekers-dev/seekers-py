@@ -707,6 +707,11 @@ class World:
         pos.x -= math.floor(pos.x / self.width) * self.width
         pos.y -= math.floor(pos.y / self.height) * self.height
 
+    def normalized_position(self,pos: Vector):
+        tmp = pos
+        self.normalize_position(tmp)
+        return tmp
+
     @property
     def geometry(self) -> Vector:
         return Vector(self.width, self.height)

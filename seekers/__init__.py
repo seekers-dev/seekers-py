@@ -39,7 +39,7 @@ class SeekersGame:
         self.goals = []
         self.camps = []
 
-        self.renderer = draw.GameRenderer(config, debug)
+
         self.animations = []
 
         self.ticks = 0
@@ -65,6 +65,14 @@ class SeekersGame:
 
         # set up camps
         self.camps = self.world.generate_camps(self.players.values())
+
+        #print(list(list(self.players.values())[0].seekers.values())[0])
+        reference = list(list(self.players.values())[0].seekers.values())[0]
+        reference = None
+        reference = self.goals[0]
+        self.renderer = draw.GameRenderer(self.config, \
+                                          reference=reference\
+                                          , debug_mode=self.debug)
 
         # prepare graphics
         self.renderer.init(self.players.values())

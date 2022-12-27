@@ -35,7 +35,7 @@ class ScoreAnimation(Animation):
 
 
 class GameRenderer:
-    def __init__(self, config: Config, debug_mode: bool = False):
+    def __init__(self, config: Config, reference: Physical = None, debug_mode: bool = False):
         self.font = pygame.font.SysFont("monospace", 20, bold=True)
         self.background_color = (0, 0, 30)
 
@@ -44,6 +44,16 @@ class GameRenderer:
 
         self.config = config
         self.debug_mode = debug_mode
+
+        self.reference = reference
+
+        self.world = World(self.config.map_width,self.config.map_height)
+
+        if reference is None:
+            self.reference = Physical("tmp", self.world.geometry * 0.5, Vector(0, 0), 0, 0, self.config)
+
+    def relative_pos(self,vec : Vector):
+        return self.world.normalized_position(self.world.torus_difference(self.reference.position,vec) + self.world.geometry*0.5)
 
     def init(self, players: Iterable[InternalPlayer]):
         for p in players:
@@ -74,6 +84,7 @@ class GameRenderer:
         # no torus drawing for text
 
     def draw_circle(self, color: Color, center: Vector, radius: float, width: int = 0):
+        center = self.relative_pos(center)
         r = Vector(radius, radius)
 
         self.draw_torus(
@@ -82,6 +93,8 @@ class GameRenderer:
         )
 
     def draw_line(self, color: Color, start: Vector, end: Vector, width: int = 1):
+        start = self.relative_pos(start)
+        end = self.relative_pos(end)
         d = end - start
 
         self.draw_torus(
@@ -90,6 +103,7 @@ class GameRenderer:
         )
 
     def draw_rect(self, color: Color, p1: Vector, p2: Vector, width: int = 0):
+        p1, p2 = self.relative_pos(p1),self.relative_pos(p2)
         self.draw_torus(
             lambda pos: pygame.draw.rect(self.screen, color, pygame.Rect(tuple(pos), tuple(p2 - p1)), width),
             p1, p2
@@ -145,23 +159,25 @@ class GameRenderer:
             self.draw_text(debug_str, (255, 255, 255), seeker.position)
 
     def draw_halo(self, seeker: InternalSeeker, color: Color):
+        adjpos = seeker.position
         if seeker.is_disabled:
             return
 
         mu = abs(math.sin((int(pygame.time.get_ticks() / 30) % 50) / 50 * 2 * math.pi)) ** 2
-        self.draw_circle(interpolate_color(color, [0, 0, 0], mu), seeker.position, 3 + seeker.radius, 3)
+        self.draw_circle(interpolate_color(color, [0, 0, 0], mu), adjpos, 3 + seeker.radius, 3)
 
         if not seeker.magnet.is_on():
             return
 
         for offset in 0, 10, 20, 30, 40:
             mu = int(-seeker.magnet.strength * pygame.time.get_ticks() / 50 + offset) % 50
-            self.draw_circle(interpolate_color(color, [0, 0, 0], mu / 50), seeker.position, mu + seeker.radius, 2)
+            self.draw_circle(interpolate_color(color, [0, 0, 0], mu / 50), adjpos, mu + seeker.radius, 2)
 
     def draw_jet_stream(self, seeker: InternalSeeker, direction: Vector):
         length = seeker.radius * 3
+        adjpos = seeker.position
 
-        self.draw_line((255, 255, 255), seeker.position, seeker.position + direction * length)
+        self.draw_line((255, 255, 255), adjpos, adjpos + direction * length)
 
     def draw_information(self, players: Iterable[InternalPlayer], pos: Vector, clock: pygame.time.Clock):
         # draw fps
