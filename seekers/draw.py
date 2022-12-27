@@ -17,7 +17,7 @@ class Animation(abc.ABC):
 
 
 class ScoreAnimation(Animation):
-    duration = 20
+    duration = 40
 
     def __init__(self, position: Vector, color: Color, radius: float):
         super().__init__()
@@ -27,7 +27,7 @@ class ScoreAnimation(Animation):
 
     def draw(self, renderer: "GameRenderer"):
         t = self.age / self.duration
-        r = self.radius + 100 * t
+        r = self.radius + 50 * t
 
         renderer.draw_circle(self.color, self.position, int(r), 1)
 
