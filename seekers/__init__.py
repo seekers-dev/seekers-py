@@ -123,9 +123,17 @@ class SeekersGame:
             self.grpc.start()
 
             if not self.config.global_auto_play:
-                self._logger.info(f"Waiting for players to connect: {self.config.global_players - len(self.players)}")
+                last_diff = None
 
                 while len(self.players) < self.config.global_players:
+                    new_diff = self.config.global_players - len(self.players)
+
+                    if new_diff != last_diff:
+                        self._logger.info(
+                            f"Waiting for players to connect: {self.config.global_players - len(self.players)}"
+                        )
+                        last_diff = new_diff
+
                     time.sleep(0.1)
 
     @staticmethod
