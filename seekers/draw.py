@@ -1,4 +1,5 @@
 import pygame
+import pygame.gfxdraw
 from typing import Iterable, Callable, Collection
 
 from .hash_color import interpolate_color
@@ -74,20 +75,48 @@ class GameRenderer:
     def draw_circle(self, color: Color, center: Vector, radius: float, width: int = 0):
         r = Vector(radius, radius)
 
+        # noinspection PyShadowingNames
+        def draw_aacircle(screen: pygame.Surface, pos: Vector, radius: int, color: Color, width: int = 0):
+            if width == 0:
+                # draw a not anti-aliased filled circle and then an anti-aliased, non-filled circle on top
+                pygame.draw.circle(screen, color, tuple(pos), radius, width=0)
+                pygame.gfxdraw.aacircle(screen, int(pos.x), int(pos.y), radius, color)
+                pygame.gfxdraw.aacircle(screen, int(pos.x), int(pos.y), radius - 1, color)
+
+            elif width == 1:
+                # noinspection PyTypeChecker
+                pygame.gfxdraw.aacircle(screen, int(pos.x), int(pos.y), radius, color)
+
+            else:
+                pygame.draw.circle(screen, color, tuple(pos), radius, width=width)
+
+                # plus and minus one has to stay, we get artifacts otherwise
+                pygame.gfxdraw.aacircle(screen, int(pos.x), int(pos.y), radius - 1, color)
+                pygame.gfxdraw.aacircle(screen, int(pos.x), int(pos.y), radius - width + 1, color)
+
         self.draw_torus(
-            lambda pos: pygame.draw.circle(self.screen, color, tuple(pos + r), radius, width),
+            lambda pos: draw_aacircle(self.screen, pos + r, int(radius), color, width),
             center - r, center + r
         )
 
     def draw_line(self, color: Color, start: Vector, end: Vector, width: int = 1):
         d = end - start
 
+        # noinspection PyShadowingNames
+        def draw_aaline(screen: pygame.Surface, color: Color, start: Vector, end: Vector, width: int = 1):
+            if width == 1:
+                pygame.draw.aaline(screen, color, tuple(start), tuple(end))
+            else:
+                pygame.draw.line(screen, color, tuple(start), tuple(end), width=width)
+
         self.draw_torus(
-            lambda pos: pygame.draw.line(self.screen, color, tuple(pos), tuple(pos + d), width),
+            lambda pos: draw_aaline(self.screen, color, pos, pos + d, width),
             start, end
         )
 
     def draw_rect(self, color: Color, p1: Vector, p2: Vector, width: int = 0):
+        # rects don't get anti-aliased
+
         self.draw_torus(
             lambda pos: pygame.draw.rect(self.screen, color, pygame.Rect(tuple(pos), tuple(p2 - p1)), width),
             p1, p2
