@@ -1,3 +1,5 @@
+import math
+
 import pygame
 from typing import Iterable, Callable, Union
 
@@ -129,9 +131,16 @@ class GameRenderer:
 
         # draw information (player's scores, etc.)
         self.draw_information(players, Vector(10, 10), clock)
-
+        if self.debug_mode and len(players) == 2:
+            from scipy import stats
+            score0 = list(players)[0].score
+            score1 = list(players)[1].score
+            t, p = stats.ttest_1samp([1]*score0 + [0]*score1, 0.5)
+            self.draw_text(f"{p:.2e}",(255,255,255),Vector(100,100))
         # update display
         pygame.display.flip()
+
+
 
     def draw_seeker(self, seeker: InternalSeeker, player: InternalPlayer, debug_str: str):
         color = player.color
