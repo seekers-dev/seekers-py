@@ -175,7 +175,7 @@ class GameRenderer:
             pos += dy
 
         # draw student's t-test
-        if self.debug_mode and len(players) == 2:
+        if self.config.flags_t_test and len(players) == 2:
             from scipy import stats
 
             score0 = list(players)[0].score

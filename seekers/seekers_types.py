@@ -48,7 +48,6 @@ class Config:
 
     physical_max_speed: float
     physical_friction: float
-    physical_experimental_friction: bool
 
     seeker_magnet_slowdown: float
     seeker_disabled_time: int
@@ -58,6 +57,9 @@ class Config:
     goal_scoring_time: int
     goal_radius: float
     goal_mass: float
+
+    flags_experimental_friction: bool
+    flags_t_test: bool
 
     @property
     def updates_per_frame(self):
@@ -91,7 +93,6 @@ class Config:
 
             physical_max_speed=cp.getfloat("physical", "max-speed"),
             physical_friction=cp.getfloat("physical", "friction"),
-            physical_experimental_friction=cp.getboolean("physical", "experimental-friction", fallback=False),
 
             seeker_magnet_slowdown=cp.getfloat("seeker", "magnet-slowdown"),
             seeker_disabled_time=cp.getint("seeker", "disabled-time"),
@@ -100,7 +101,10 @@ class Config:
 
             goal_scoring_time=cp.getint("goal", "scoring-time"),
             goal_radius=cp.getfloat("goal", "radius"),
-            goal_mass=cp.getfloat("goal", "mass")
+            goal_mass=cp.getfloat("goal", "mass"),
+
+            flags_experimental_friction=cp.getboolean("flags", "experimental-friction"),
+            flags_t_test=cp.getboolean("flags", "t-test"),
         )
 
     @classmethod
@@ -238,7 +242,7 @@ class Physical:
         return self.config.physical_max_speed * self.config.physical_friction
 
     def move(self, world: "World"):
-        if self.config.physical_experimental_friction:
+        if self.config.flags_experimental_friction:
             vel_fact = (
                 math.sqrt(
                     self.velocity.length() ** 2 - 2 * self.config.physical_friction * self.velocity.length()
