@@ -7,7 +7,6 @@ import time
 import logging
 import threading
 
-from seekers import string_hash_color
 from seekers.grpc import seekers_proto_types as types
 from seekers.grpc.converters import *
 
@@ -305,7 +304,7 @@ class GrpcSeekersServicer(pb2_grpc.SeekersServicer):
 
         # create new player
         player = seekers.GRPCClientPlayer(
-            seekers.get_id("Player"), requested_name, string_hash_color(requested_name), 0, {}
+            seekers.get_id("Player"), requested_name, 0, {}
         )
 
         # add player to game

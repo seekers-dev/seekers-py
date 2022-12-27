@@ -13,7 +13,7 @@ import typing
 from multiprocessing.pool import ThreadPool
 from collections import defaultdict
 
-from .hash_color import string_hash_color
+from . import Color
 
 _IDS = defaultdict(list)
 
@@ -38,6 +38,7 @@ class Config:
     global_players: int
     global_seekers: int
     global_goals: int
+    global_color_threshold: float
 
     map_width: int
     map_height: int
@@ -80,6 +81,7 @@ class Config:
             global_players=cp.getint("global", "players"),
             global_seekers=cp.getint("global", "seekers"),
             global_goals=cp.getint("global", "goals"),
+            global_color_threshold=cp.getfloat("global", "color-threshold"),
 
             map_width=cp.getint("map", "width"),
             map_height=cp.getint("map", "height"),
@@ -391,7 +393,7 @@ class Seeker(Physical):
 class InternalSeeker(InternalPhysical, Seeker):
     def __init__(self, id_: str, position: Vector, velocity: Vector, owner: "InternalPlayer", config: Config):
         super().__init__(id_, position, velocity, config.seeker_mass, config.seeker_radius, owner, config)
-        self.target = self.position
+        self.target = self.position.copy()
         self.disabled_counter = 0
         self.magnet = Magnet()
         self.owner = owner
@@ -447,11 +449,11 @@ DecideCallable = typing.Callable[
 class Player:
     id: str
     name: str
-    color: tuple[int, int, int]
     score: int
     seekers: dict[str, Seeker]
 
-    camp: "Camp" = dataclasses.field(init=False, default=None)
+    color: Color | None = dataclasses.field(init=False, default=None)
+    camp: typing.Union["Camp", None] = dataclasses.field(init=False, default=None)
 
 
 @dataclasses.dataclass
@@ -461,7 +463,7 @@ class InternalPlayer(Player):
     debug_drawings: list = dataclasses.field(init=False, default_factory=list)
 
     def to_ai_input(self) -> Player:
-        player = Player(self.id, self.name, self.color, self.score, {})
+        player = Player(self.id, self.name, self.score, {})
         player.seekers = {id_: s.to_ai_input(player) for id_, s in self.seekers.items()}
         player.camp = self.camp.to_ai_input(player)
 
@@ -660,7 +662,6 @@ class LocalPlayer(InternalPlayer):
         return LocalPlayer(
             id=get_id("Player"),
             name=name,
-            color=string_hash_color(name),
             score=0,
             seekers={},
             ai=LocalPlayerAI.from_file(filepath)
@@ -758,16 +759,21 @@ class World:
         return Vector(random.uniform(0, self.width),
                       random.uniform(0, self.height))
 
-    def gen_camp(self, n, i, player: Player):
-        r = self.diameter() / 4
-        width = height = r / 5
+    def generate_camps(self, players: typing.Collection[Player], config: Config) -> list["Camp"]:
+        delta_x = self.width / len(players)
 
-        pos = self.middle() + Vector.from_polar(2 * math.pi * i / n) * r
-        return Camp(get_id("Camp"), player, pos, width, height)
+        if config.camp_width > delta_x:
+            raise ValueError("Config value camp.width is too large. The camps would overlap. It must be smaller than "
+                             "the width of the world divided by the number of players. ")
 
-    def generate_camps(self, players: typing.Collection[Player]) -> list["Camp"]:
         for i, player in enumerate(players):
-            camp = self.gen_camp(len(players), i, player)
+            camp = Camp(
+                id=get_id("Camp"),
+                owner=player,
+                position=Vector(delta_x * (i - 0.5), self.height / 2),
+                width=config.camp_width,
+                height=config.camp_height,
+            )
             player.camp = camp
 
         return [player.camp for player in players]

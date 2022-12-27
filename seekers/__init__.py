@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from .hash_color import Color
 from .seekers_types import *
-from . import game_logic, draw
+from . import game_logic, draw, hash_color
 
 import logging
 import time
@@ -62,9 +63,10 @@ class SeekersGame:
                 (id_ := get_id("Seeker")): InternalSeeker(id_, self.world.random_position(), Vector(), p, self.config)
                 for _ in range(self.config.global_seekers)
             }
+            p.color = self.get_new_player_color(p.name)
 
         # set up camps
-        self.camps = self.world.generate_camps(self.players.values())
+        self.camps = self.world.generate_camps(self.players.values(), self.config)
 
         # prepare graphics
         self.renderer.init(self.players.values())
@@ -156,6 +158,12 @@ class SeekersGame:
     def print_scores(self):
         for player in sorted(self.players.values(), key=lambda p: p.score, reverse=True):
             print(f"{player.score} P.:\t{player.name}")
+
+    def get_new_player_color(self, name: str) -> Color:
+        old_colors = [p.color for p in self.players.values() if p.color is not None]
+        preferred = hash_color.string_hash_color(name)
+
+        return hash_color.pick_new(old_colors, preferred, threshold=self.config.global_color_threshold)
 
     @property
     def seekers(self) -> collections.ChainMap[str, InternalSeeker]:

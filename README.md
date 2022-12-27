@@ -19,22 +19,26 @@
      * useful for debugging/AI-developement
 
 ## How to run
-Install python 3.10 or 3.9 and the packages in [`requirements.txt`](requirements.txt).
+* Install python 3.10 or 3.9
+* Install the packages in [`requirements.txt`](requirements.txt).
+  ```shell
+  pip install -r requirements.txt
+  ```
 
 ### Run a Python Seekers game (and a gRPC server)
 This will:
 * start a Seekers game
 * run a gRPC server by default
 * join the specified AIs (see [old join method](#join-method-old))
-```bash
-$ python3 run_seekers.py <AI files>
+```shell
+python3 run_seekers.py <AI files>
 ```
 
 ### Run a Python AI as a Seekers gRPC client
 You will need a separate server running. This can be the server above, or, for example, [the Java implementation](https://github.com/seekers-dev/seekers-api).
 
-```bash
-$ python3 run_clients.py <AI files>
+```shell
+python3 run_clients.py <AI files>
 ```
 
 ## License

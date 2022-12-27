@@ -4,8 +4,6 @@ from typing import Iterable, Callable, Union, Collection
 from .hash_color import interpolate_color
 from .seekers_types import *
 
-Color = Union[tuple[int, int, int], list[int]]
-
 
 class Animation(abc.ABC):
     duration: float
@@ -47,7 +45,7 @@ class GameRenderer:
 
     def init(self, players: Iterable[InternalPlayer]):
         for p in players:
-            self.player_name_images[p.name] = self.font.render(p.name, True, p.color)
+            self.player_name_images[p.id] = self.font.render(p.name, True, p.color)
 
         self.screen = pygame.display.set_mode(self.config.map_dimensions)
 
@@ -173,7 +171,7 @@ class GameRenderer:
         pos += dy
         for p in players:
             self.draw_text(str(p.score), p.color, pos, center=False)
-            self.screen.blit(self.player_name_images[p.name], tuple(pos + dx))
+            self.screen.blit(self.player_name_images[p.id], tuple(pos + dx))
             pos += dy
 
         # draw student's t-test
