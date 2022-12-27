@@ -1,7 +1,10 @@
 """This file consist of a series of functions that convert between the gRPC types and the internal types."""
 
-
-from google._upb._message import MessageMeta
+try:
+    from google._upb._message import MessageMeta
+except ImportError:
+    # google package is not explicitly required, it may not be installed
+    MessageMeta = type
 
 from seekers.grpc import seekers_pb2_grpc as pb2_grpc
 from seekers.grpc import types

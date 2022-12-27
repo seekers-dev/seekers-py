@@ -1,6 +1,11 @@
 import argparse
 import sys
 
+# needed for compatibility with python on android
+import pygame
+
+pygame.init()
+
 from seekers import *
 
 
