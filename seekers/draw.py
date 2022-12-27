@@ -161,6 +161,22 @@ class GameRenderer:
 
         self.draw_line((255, 255, 255), seeker.position, seeker.position + direction * length)
 
+    @staticmethod
+    def students_ttest(players: Collection[InternalPlayer]) -> float:
+        if len(players) != 2:
+            raise ValueError("Students t-test only works with 2 players.")
+
+        # noinspection PyPackageRequirements
+        from scipy import stats
+
+        players = iter(players)
+
+        score0 = next(players).score
+        score1 = next(players).score
+
+        t, p = stats.ttest_1samp([1] * score0 + [0] * score1, 0.5)
+        return p
+
     def draw_information(self, players: Collection[InternalPlayer], pos: Vector, clock: pygame.time.Clock):
         # draw fps
         fps = int(clock.get_fps())
@@ -176,9 +192,6 @@ class GameRenderer:
 
         # draw student's t-test
         if self.config.flags_t_test and len(players) == 2:
-            from scipy import stats
+            p = self.students_ttest(players)
 
-            score0 = list(players)[0].score
-            score1 = list(players)[1].score
-            t, p = stats.ttest_1samp([1] * score0 + [0] * score1, 0.5)
             self.draw_text(f"{p:.2e}", (255, 255, 255), Vector(100, 100))
