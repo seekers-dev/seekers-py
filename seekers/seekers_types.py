@@ -393,7 +393,7 @@ class Seeker(Physical):
 class InternalSeeker(InternalPhysical, Seeker):
     def __init__(self, id_: str, position: Vector, velocity: Vector, owner: "InternalPlayer", config: Config):
         super().__init__(id_, position, velocity, config.seeker_mass, config.seeker_radius, owner, config)
-        self.target = self.position
+        self.target = self.position.copy()
         self.disabled_counter = 0
         self.magnet = Magnet()
         self.owner = owner
