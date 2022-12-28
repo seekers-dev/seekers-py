@@ -43,15 +43,18 @@ class GameRenderer:
         self.config = config
         self.debug_mode = debug_mode
 
-        self.reference = reference
+        self.world = World(self.config.map_width, self.config.map_height)
 
-        self.world = World(self.config.map_width,self.config.map_height)
+        self.reference = reference
 
         if reference is None:
             self.reference = Physical("tmp", self.world.geometry * 0.5, Vector(0, 0), 0, 0, self.config)
 
-    def relative_pos(self,vec : Vector):
-        return self.world.normalized_position(self.world.torus_difference(self.reference.position,vec) + self.world.geometry*0.5)
+    def relative_pos(self, pos: Vector):
+        if self.reference is None:
+            return pos
+
+        return pos + (self.world.middle() - self.reference.position)
 
     def init(self, players: Iterable[InternalPlayer]):
         for p in players:
@@ -74,7 +77,10 @@ class GameRenderer:
         if p1.y < 0:
             func(p1 + Vector(0, self.config.map_height))
 
-    def draw_text(self, text: str, color: Color, pos: Vector, center=True):
+    def draw_text(self, text: str, color: Color, pos: Vector, center=True, relative=True):
+        if relative:
+            pos = self.relative_pos(pos)
+
         dx, dy = self.font.size(text)
         adj_pos = pos - Vector(dx, dy) / 2 if center else pos
         self.screen.blit(self.font.render(text, False, color), tuple(adj_pos))
@@ -101,7 +107,8 @@ class GameRenderer:
         )
 
     def draw_rect(self, color: Color, p1: Vector, p2: Vector, width: int = 0):
-        p1, p2 = self.relative_pos(p1),self.relative_pos(p2)
+        p1, p2 = self.relative_pos(p1), self.relative_pos(p2)
+
         self.draw_torus(
             lambda pos: pygame.draw.rect(self.screen, color, pygame.Rect(tuple(pos), tuple(p2 - p1)), width),
             p1, p2
@@ -133,7 +140,7 @@ class GameRenderer:
                 self.draw_seeker(seeker, player, str(i))
 
             for debug_drawing in player.debug_drawings:
-                debug_drawing.draw(self.screen)
+                debug_drawing.draw(self)
 
         # draw animations
         for animation in animations:
@@ -199,20 +206,20 @@ class GameRenderer:
     def draw_information(self, players: Collection[InternalPlayer], pos: Vector, clock: pygame.time.Clock):
         # draw fps
         fps = int(clock.get_fps())
-        self.draw_text(str(fps), (250, 250, 250), pos, center=False)
+        self.draw_text(str(fps), (250, 250, 250), pos, center=False, relative=False)
 
         dx = Vector(40, 0)
         dy = Vector(0, 30)
         pos += dy
         for p in players:
-            self.draw_text(str(p.score), p.color, pos, center=False)
+            self.draw_text(str(p.score), p.color, pos, center=False, relative=False)
             self.screen.blit(self.player_name_images[p.id], tuple(pos + dx))
             pos += dy
 
         # draw student's t-test
         if self.config.flags_t_test:
             if len(players) == 2 and all(p.score > 0 for p in players):
-                p = self.students_ttest(players)
+                p = self.students_ttest(players, relative=False)
                 text = f"{p:.2e}"
             else:
                 text = "N/A"

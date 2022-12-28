@@ -5,12 +5,13 @@ import pygame
 from contextvars import ContextVar
 
 from seekers import Vector
+from seekers.draw import GameRenderer
 
 
 @dataclasses.dataclass
 class DebugDrawing(abc.ABC):
     @abc.abstractmethod
-    def draw(self, surface: pygame.Surface):
+    def draw(self, game_renderer: GameRenderer):
         ...
 
 
@@ -19,16 +20,10 @@ class TextDebugDrawing(DebugDrawing):
     text: str
     position: Vector
     color: tuple[int, int, int] = (255, 255, 255)
-    size: int = 20
 
-    def __post_init__(self):
-        self.font = pygame.font.SysFont("monospace", self.size, bold=True)
-
-    def draw(self, surface: pygame.Surface):
+    def draw(self, game_renderer: GameRenderer):
         # draw the text centered at the position
-        text_surface = self.font.render(self.text, True, self.color)
-        text_rect = text_surface.get_rect(center=tuple(self.position))
-        surface.blit(text_surface, text_rect)
+        game_renderer.draw_text(self.text, self.color, self.position, center=True)
 
 
 @dataclasses.dataclass
@@ -38,8 +33,8 @@ class LineDebugDrawing(DebugDrawing):
     color: tuple[int, int, int] = (255, 255, 255)
     width: int = 2
 
-    def draw(self, surface: pygame.Surface):
-        pygame.draw.line(surface, self.color, tuple(self.start), tuple(self.end), self.width)
+    def draw(self, game_renderer: GameRenderer):
+        game_renderer.draw_line(self.color, self.start, self.end, self.width)
 
 
 @dataclasses.dataclass
@@ -49,12 +44,12 @@ class CircleDebugDrawing(DebugDrawing):
     color: tuple[int, int, int] = (255, 255, 255)
     width: int = 2
 
-    def draw(self, surface: pygame.Surface):
-        pygame.draw.circle(surface, self.color, tuple(self.position), self.radius, self.width)
+    def draw(self, game_renderer: GameRenderer):
+        game_renderer.draw_circle(self.color, self.position, self.radius, self.width)
 
 
-def draw_text(text: str, position: Vector, color: tuple[int, int, int] = (255, 255, 255), size: int = 20):
-    add_debug_drawing_func_ctxtvar.get()(TextDebugDrawing(text, position, color, size))
+def draw_text(text: str, position: Vector, color: tuple[int, int, int] = (255, 255, 255)):
+    add_debug_drawing_func_ctxtvar.get()(TextDebugDrawing(text, position, color))
 
 
 def draw_line(start: Vector, end: Vector, color: tuple[int, int, int] = (255, 255, 255), width: int = 2):
