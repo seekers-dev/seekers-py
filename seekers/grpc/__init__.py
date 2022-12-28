@@ -42,6 +42,8 @@ class GrpcSeekersRawClient:
         self.channel_connectivity_status = None
         self.channel.subscribe(self._channel_connectivity_callback, try_to_connect=True)
 
+        self._logger = logging.getLogger(self.__class__.__name__)
+
     def _channel_connectivity_callback(self, state):
         self.channel_connectivity_status = state
 
@@ -50,7 +52,9 @@ class GrpcSeekersRawClient:
         try:
             reply: types.JoinReply = self.stub.Join(JoinRequest(name=self.name, color=convert_color_back(self.color)))
 
-            if reply.version != _VERSION:
+            if reply.version == "":
+                self._logger.warning("Empty version string: Server is running an unknown version of Seekers.")
+            elif reply.version != _VERSION:
                 raise GrpcSeekersClientError(
                     f"Server version {reply.version!r} is not supported. This is version {_VERSION!r}."
                 )
@@ -140,7 +144,6 @@ class GrpcSeekersClient:
                 self.tick()
             except (grpc._channel._InactiveRpcError, ServerUnavailableError):
                 self._logger.info("Game ended.")
-                raise
                 break
 
     def get_server_config(self):
