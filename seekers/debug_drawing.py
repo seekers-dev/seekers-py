@@ -1,7 +1,6 @@
 import abc
 import dataclasses
 import typing
-import pygame
 from contextvars import ContextVar
 
 from seekers import Vector
