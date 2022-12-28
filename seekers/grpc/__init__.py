@@ -92,6 +92,7 @@ class GrpcSeekersRawClient:
                 # We don't know why this happens.
                 # The CommandUnit procedure is called
                 # though, so we can just ignore the error.
+                # TODO: Is this still the case?
                 # See GitHub https://github.com/seekers-dev/seekers-api/issues/8
                 ...
             else:
