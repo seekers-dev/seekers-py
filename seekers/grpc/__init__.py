@@ -142,9 +142,15 @@ class GrpcSeekersClient:
         while 1:
             try:
                 self.tick()
-            except (grpc._channel._InactiveRpcError, ServerUnavailableError):
+            except ServerUnavailableError:
                 self._logger.info("Game ended.")
                 break
+            except grpc._channel._InactiveRpcError as e:
+                if e.code() == grpc.StatusCode.UNAVAILABLE:
+                    self._logger.info("Game ended.")
+                    break
+                else:
+                    raise
 
     def get_server_config(self):
         if self._server_config is None or self.safe_mode:
