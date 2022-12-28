@@ -12,6 +12,8 @@ from seekers.grpc import seekers_proto_types as types
 from seekers.grpc.converters import *
 from seekers.hash_color import string_hash_color
 
+_VERSION = "1"
+
 
 class GrpcSeekersClientError(Exception): ...
 
@@ -28,8 +30,6 @@ class ServerUnavailableError(GrpcSeekersClientError): ...
 class GrpcSeekersRawClient:
     """A client for a Seekers gRPC game.
     It is called "raw" because it is nothing but a wrapper for the gRPC services."""
-
-    _VERSION = 1
 
     def __init__(self, name: str, address: str = "localhost:7777", color: Color = None):
         self.name = name
@@ -49,11 +49,10 @@ class GrpcSeekersRawClient:
         """Try to join the game and return our player_id."""
         try:
             reply: types.JoinReply = self.stub.Join(JoinRequest(name=self.name, color=convert_color_back(self.color)))
-            breakpoint()
 
-            if reply.version != self._VERSION:
+            if reply.version != _VERSION:
                 raise GrpcSeekersClientError(
-                    f"Server version {reply.version} is not supported. Client version is {self._VERSION}."
+                    f"Server version {reply.version!r} is not supported. This is version {_VERSION!r}."
                 )
 
             self.token = reply.token
@@ -120,10 +119,10 @@ class GrpcSeekersClient:
         self._last_time_ai_updated = time.perf_counter()
 
     def join(self):
-        self._logger.info(f"Joining session with token={self.client.token!r}")
+        self._logger.info(f"Joining session with name={self.client.name!r}, color={self.client.color!r}")
         self.player_id = self.client.join_session()
 
-        self._logger.info(f"Joined session as {self.player_id}")
+        self._logger.info(f"Joined session as {self.player_id!r}")
         self._logger.debug(f"Properties: {self.client.server_properties()!r}")
 
     def run(self):
@@ -141,6 +140,7 @@ class GrpcSeekersClient:
                 self.tick()
             except (grpc._channel._InactiveRpcError, ServerUnavailableError):
                 self._logger.info("Game ended.")
+                raise
                 break
 
     def get_server_config(self):
@@ -299,20 +299,21 @@ class GrpcSeekersServicer(pb2_grpc.SeekersServicer):
         self.seekers_game = seekers_game
         self.game_start_event = game_start_event
 
-    def JoinSession(self, request: SessionRequest, context: grpc.ServicerContext) -> SessionReply:
+    def Join(self, request: JoinRequest, context: grpc.ServicerContext) -> JoinReply:
         # validate requested token
-        requested_name = request.token.strip()
-
-        if requested_name in {p.name for p in self.seekers_game.players.values()}:
-            # context.abort(grpc.StatusCode.ALREADY_EXISTS, f"Requested name {requested_name!r} already taken.")
-
-            # add the player nonetheless
-            ...
+        requested_name = request.name.strip()
 
         if not requested_name:
             context.abort(grpc.StatusCode.INVALID_ARGUMENT,
                           f"Requested name must not be empty or only consist of whitespace.")
             return
+
+        # add the player with a new name if the requested name is already taken
+        _requested_name = requested_name
+        i = 2
+        while _requested_name in {p.name for p in self.seekers_game.players.values()}:
+            _requested_name = f"{requested_name} ({i})"
+            i += 1
 
         # create new player
         player = seekers.GRPCClientPlayer(
@@ -328,44 +329,48 @@ class GrpcSeekersServicer(pb2_grpc.SeekersServicer):
 
         self._logger.info(f"Player {player.name!r} joined the game. ({player.id})")
         # return player id
-        return SessionReply(id=player.id)
+        # token is just the player id, we don't need something more complex for now
+        return JoinReply(token=player.id, id=player.id, version=_VERSION)
 
-    def PropertiesInfo(self, request: PropertiesRequest, context) -> PropertiesReply:
+    def Properties(self, request: PropertiesRequest, context) -> PropertiesReply:
         return PropertiesReply(entries=self.seekers_game.config.to_properties())
 
-    def EntityStatus(self, request: EntityRequest, context) -> EntityReply:
+    def Status(self, request: StatusRequest, context) -> StatusReply:
+        if request.token not in self.seekers_game.players:
+            context.abort(grpc.StatusCode.PERMISSION_DENIED, "Invalid token.")
+            return
+
         self.game_start_event.wait()
-        return EntityReply(
-            seekers={s_id: convert_seeker_back(s) for s_id, s in self.seekers_game.seekers.items()},
-            goals={goal.id: convert_goal_back(goal) for goal in self.seekers_game.goals},
+
+        players = [
+            # filter out players whose camp has not been set yet, meaning they are still uninitialized
+            # TODO: Do we still need this?
+            convert_player_back(p) for p in self.seekers_game.players.values() if p.camp is not None
+        ]
+        camps = [convert_camp_back(c) for c in self.seekers_game.camps]
+
+        return StatusReply(
+            players=players,
+            camps=camps,
+            seekers=[convert_seeker_back(s) for s in self.seekers_game.seekers.values()],
+            goals=[convert_goal_back(goal) for goal in self.seekers_game.goals],
+
             passed_playtime=self.seekers_game.ticks,
         )
 
-    def PlayerStatus(self, request: PlayerRequest, context) -> PlayerReply:
-        self.game_start_event.wait()
-        players = {
-            # filter out players whose camp has not been set yet, meaning they are still uninitialized
-            p_id: convert_player_back(p) for p_id, p in self.seekers_game.players.items() if p.camp is not None
-        }
-
-        return PlayerReply(
-            players=players,
-            camps={c.id: convert_camp_back(c) for c in self.seekers_game.camps}
-        )
-
-    def CommandUnit(self, request: CommandRequest, context) -> CommandReply:
+    def Command(self, request: CommandRequest, context) -> CommandReply:
         self.game_start_event.wait()
         try:
-            seeker = self.seekers_game.seekers[request.id]
+            seeker = self.seekers_game.seekers[request.seeker_id]
         except KeyError:
             context.abort(grpc.StatusCode.NOT_FOUND, f"Seeker with id {request.id!r} not found in the game.")
             return
 
         # check if seeker is owned by player
-        if seeker.owner.name != request.token:
+        if seeker.owner.id != request.token:
             context.abort(
-                grpc.StatusCode.UNAUTHENTICATED,
-                f"Seeker with id {request.id!r} is not owned by player {request.token!r}."
+                grpc.StatusCode.PERMISSION_DENIED,
+                f"Seeker with id {request.seeker_id!r} is not owned by player {request.token!r}."
             )
             return
 
