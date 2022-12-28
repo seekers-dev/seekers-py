@@ -59,6 +59,7 @@ def goal_scored(player: InternalPlayer, goal_index: int, goals: list[Goal], anim
 
     goal = goals[goal_index]
     goal.id_ = get_id("Goal")
-    goal.position = world.random_position()
 
     animations.append(ScoreAnimation(goal.position, player.color, goal.radius))
+
+    goal.position = world.random_position()

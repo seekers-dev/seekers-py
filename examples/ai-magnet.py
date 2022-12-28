@@ -10,7 +10,7 @@ def decide(own_seekers: list[Seeker], other_seekers: list[Seeker], all_seekers: 
     if dist < 90:
         # print("** AN")
         s.set_magnet_attractive()
-        s.target = camp.position
+        s.target = own_camp.position
     else:
         # print("** AUS")
         s.disable_magnet()

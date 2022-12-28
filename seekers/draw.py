@@ -1,10 +1,8 @@
 import pygame
-from typing import Iterable, Callable, Union
+from typing import Iterable, Callable, Collection
 
 from .hash_color import interpolate_color
 from .seekers_types import *
-
-Color = Union[tuple[int, int, int], list[int]]
 
 
 class Animation(abc.ABC):
@@ -19,7 +17,7 @@ class Animation(abc.ABC):
 
 
 class ScoreAnimation(Animation):
-    duration = 20
+    duration = 40
 
     def __init__(self, position: Vector, color: Color, radius: float):
         super().__init__()
@@ -29,7 +27,7 @@ class ScoreAnimation(Animation):
 
     def draw(self, renderer: "GameRenderer"):
         t = self.age / self.duration
-        r = self.radius + 100 * t
+        r = self.radius + 50 * t
 
         renderer.draw_circle(self.color, self.position, int(r), 1)
 
@@ -57,7 +55,7 @@ class GameRenderer:
 
     def init(self, players: Iterable[InternalPlayer]):
         for p in players:
-            self.player_name_images[p.name] = self.font.render(p.name, True, p.color)
+            self.player_name_images[p.id] = self.font.render(p.name, True, p.color)
 
         self.screen = pygame.display.set_mode(self.config.map_dimensions)
 
@@ -109,7 +107,7 @@ class GameRenderer:
             p1, p2
         )
 
-    def draw(self, players: Iterable[InternalPlayer], camps: Iterable[Camp], goals: Iterable[InternalGoal],
+    def draw(self, players: Collection[InternalPlayer], camps: Iterable[Camp], goals: Iterable[InternalGoal],
              animations: list[Animation], clock: pygame.time.Clock):
         # clear screen
         self.screen.fill(self.background_color)
@@ -179,7 +177,26 @@ class GameRenderer:
 
         self.draw_line((255, 255, 255), adjpos, adjpos + direction * length)
 
-    def draw_information(self, players: Iterable[InternalPlayer], pos: Vector, clock: pygame.time.Clock):
+    @staticmethod
+    def students_ttest(players: Collection[InternalPlayer]) -> float:
+        if len(players) != 2:
+            raise ValueError("Students t-test only works with 2 players.")
+
+        players = iter(players)
+
+        score0 = next(players).score
+        score1 = next(players).score
+
+        if score0 == 0 or score1 == 0:
+            return float("nan")
+
+        # noinspection PyPackageRequirements
+        from scipy import stats
+
+        t, p = stats.ttest_1samp([1] * score0 + [0] * score1, 0.5)
+        return p
+
+    def draw_information(self, players: Collection[InternalPlayer], pos: Vector, clock: pygame.time.Clock):
         # draw fps
         fps = int(clock.get_fps())
         self.draw_text(str(fps), (250, 250, 250), pos, center=False)
@@ -189,5 +206,15 @@ class GameRenderer:
         pos += dy
         for p in players:
             self.draw_text(str(p.score), p.color, pos, center=False)
-            self.screen.blit(self.player_name_images[p.name], tuple(pos + dx))
+            self.screen.blit(self.player_name_images[p.id], tuple(pos + dx))
             pos += dy
+
+        # draw student's t-test
+        if self.config.flags_t_test:
+            if len(players) == 2 and all(p.score > 0 for p in players):
+                p = self.students_ttest(players)
+                text = f"{p:.2e}"
+            else:
+                text = "N/A"
+
+            self.draw_text(f"T-Test: {text}", (255, 255, 255), pos, center=False)
