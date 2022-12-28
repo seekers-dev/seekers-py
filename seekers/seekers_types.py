@@ -488,9 +488,10 @@ class LocalPlayerAI:
     filepath: str
     timestamp: float
     decide_function: DecideCallable
+    preferred_color: Color | None = None
 
     @staticmethod
-    def get_decide_function(filepath: str) -> DecideCallable:
+    def load_module(filepath: str) -> tuple[DecideCallable, Color | None]:
         try:
             with open(filepath) as f:
                 code = f.readlines()
@@ -515,7 +516,7 @@ class LocalPlayerAI:
                 mod_dict = {}
                 exec(mod, mod_dict)
 
-                return mod_dict["decide"]
+                return mod_dict["decide"], mod_dict.get("__color__", None)
             except Exception as e:
                 raise InvalidAiOutputError(f"AI {filepath!r} does not have a 'decide' function.") from e
         except Exception as e:
@@ -527,9 +528,9 @@ class LocalPlayerAI:
 
     @classmethod
     def from_file(cls, filepath: str) -> "LocalPlayerAI":
-        decide_func = cls.get_decide_function(filepath)
+        decide_func, preferred_color = cls.load_module(filepath)
 
-        return cls(filepath, os.path.getctime(filepath), decide_func)
+        return cls(filepath, os.path.getctime(filepath), decide_func, preferred_color)
 
     def update(self):
         new_timestamp = os.path.getctime(self.filepath)
@@ -537,7 +538,7 @@ class LocalPlayerAI:
             logger = logging.getLogger("AIReloader")
             logger.debug(f"Reloading AI {self.filepath!r}.")
 
-            self.decide_function = self.get_decide_function(self.filepath)
+            self.decide_function, self.preferred_color = self.load_module(self.filepath)
             self.timestamp = new_timestamp
 
 

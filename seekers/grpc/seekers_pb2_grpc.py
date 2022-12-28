@@ -14,28 +14,23 @@ class SeekersStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.JoinSession = channel.unary_unary(
-                '/world.Seekers/JoinSession',
-                request_serializer=seekers__pb2.SessionRequest.SerializeToString,
-                response_deserializer=seekers__pb2.SessionReply.FromString,
+        self.Join = channel.unary_unary(
+                '/world.Seekers/Join',
+                request_serializer=seekers__pb2.JoinRequest.SerializeToString,
+                response_deserializer=seekers__pb2.JoinReply.FromString,
                 )
-        self.PropertiesInfo = channel.unary_unary(
-                '/world.Seekers/PropertiesInfo',
+        self.Properties = channel.unary_unary(
+                '/world.Seekers/Properties',
                 request_serializer=seekers__pb2.PropertiesRequest.SerializeToString,
                 response_deserializer=seekers__pb2.PropertiesReply.FromString,
                 )
-        self.EntityStatus = channel.unary_unary(
-                '/world.Seekers/EntityStatus',
-                request_serializer=seekers__pb2.EntityRequest.SerializeToString,
-                response_deserializer=seekers__pb2.EntityReply.FromString,
+        self.Status = channel.unary_unary(
+                '/world.Seekers/Status',
+                request_serializer=seekers__pb2.StatusRequest.SerializeToString,
+                response_deserializer=seekers__pb2.StatusReply.FromString,
                 )
-        self.PlayerStatus = channel.unary_unary(
-                '/world.Seekers/PlayerStatus',
-                request_serializer=seekers__pb2.PlayerRequest.SerializeToString,
-                response_deserializer=seekers__pb2.PlayerReply.FromString,
-                )
-        self.CommandUnit = channel.unary_unary(
-                '/world.Seekers/CommandUnit',
+        self.Command = channel.unary_unary(
+                '/world.Seekers/Command',
                 request_serializer=seekers__pb2.CommandRequest.SerializeToString,
                 response_deserializer=seekers__pb2.CommandReply.FromString,
                 )
@@ -44,31 +39,25 @@ class SeekersStub(object):
 class SeekersServicer(object):
     """Missing associated documentation comment in .proto file."""
 
-    def JoinSession(self, request, context):
+    def Join(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def PropertiesInfo(self, request, context):
+    def Properties(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def EntityStatus(self, request, context):
+    def Status(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def PlayerStatus(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def CommandUnit(self, request, context):
+    def Command(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -77,28 +66,23 @@ class SeekersServicer(object):
 
 def add_SeekersServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'JoinSession': grpc.unary_unary_rpc_method_handler(
-                    servicer.JoinSession,
-                    request_deserializer=seekers__pb2.SessionRequest.FromString,
-                    response_serializer=seekers__pb2.SessionReply.SerializeToString,
+            'Join': grpc.unary_unary_rpc_method_handler(
+                    servicer.Join,
+                    request_deserializer=seekers__pb2.JoinRequest.FromString,
+                    response_serializer=seekers__pb2.JoinReply.SerializeToString,
             ),
-            'PropertiesInfo': grpc.unary_unary_rpc_method_handler(
-                    servicer.PropertiesInfo,
+            'Properties': grpc.unary_unary_rpc_method_handler(
+                    servicer.Properties,
                     request_deserializer=seekers__pb2.PropertiesRequest.FromString,
                     response_serializer=seekers__pb2.PropertiesReply.SerializeToString,
             ),
-            'EntityStatus': grpc.unary_unary_rpc_method_handler(
-                    servicer.EntityStatus,
-                    request_deserializer=seekers__pb2.EntityRequest.FromString,
-                    response_serializer=seekers__pb2.EntityReply.SerializeToString,
+            'Status': grpc.unary_unary_rpc_method_handler(
+                    servicer.Status,
+                    request_deserializer=seekers__pb2.StatusRequest.FromString,
+                    response_serializer=seekers__pb2.StatusReply.SerializeToString,
             ),
-            'PlayerStatus': grpc.unary_unary_rpc_method_handler(
-                    servicer.PlayerStatus,
-                    request_deserializer=seekers__pb2.PlayerRequest.FromString,
-                    response_serializer=seekers__pb2.PlayerReply.SerializeToString,
-            ),
-            'CommandUnit': grpc.unary_unary_rpc_method_handler(
-                    servicer.CommandUnit,
+            'Command': grpc.unary_unary_rpc_method_handler(
+                    servicer.Command,
                     request_deserializer=seekers__pb2.CommandRequest.FromString,
                     response_serializer=seekers__pb2.CommandReply.SerializeToString,
             ),
@@ -113,7 +97,7 @@ class Seekers(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def JoinSession(request,
+    def Join(request,
             target,
             options=(),
             channel_credentials=None,
@@ -123,14 +107,14 @@ class Seekers(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/world.Seekers/JoinSession',
-            seekers__pb2.SessionRequest.SerializeToString,
-            seekers__pb2.SessionReply.FromString,
+        return grpc.experimental.unary_unary(request, target, '/world.Seekers/Join',
+            seekers__pb2.JoinRequest.SerializeToString,
+            seekers__pb2.JoinReply.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def PropertiesInfo(request,
+    def Properties(request,
             target,
             options=(),
             channel_credentials=None,
@@ -140,14 +124,14 @@ class Seekers(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/world.Seekers/PropertiesInfo',
+        return grpc.experimental.unary_unary(request, target, '/world.Seekers/Properties',
             seekers__pb2.PropertiesRequest.SerializeToString,
             seekers__pb2.PropertiesReply.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def EntityStatus(request,
+    def Status(request,
             target,
             options=(),
             channel_credentials=None,
@@ -157,14 +141,14 @@ class Seekers(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/world.Seekers/EntityStatus',
-            seekers__pb2.EntityRequest.SerializeToString,
-            seekers__pb2.EntityReply.FromString,
+        return grpc.experimental.unary_unary(request, target, '/world.Seekers/Status',
+            seekers__pb2.StatusRequest.SerializeToString,
+            seekers__pb2.StatusReply.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def PlayerStatus(request,
+    def Command(request,
             target,
             options=(),
             channel_credentials=None,
@@ -174,24 +158,7 @@ class Seekers(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/world.Seekers/PlayerStatus',
-            seekers__pb2.PlayerRequest.SerializeToString,
-            seekers__pb2.PlayerReply.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
-
-    @staticmethod
-    def CommandUnit(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/world.Seekers/CommandUnit',
+        return grpc.experimental.unary_unary(request, target, '/world.Seekers/Command',
             seekers__pb2.CommandRequest.SerializeToString,
             seekers__pb2.CommandReply.FromString,
             options, channel_credentials,

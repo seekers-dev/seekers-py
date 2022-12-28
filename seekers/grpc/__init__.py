@@ -7,8 +7,10 @@ import time
 import logging
 import threading
 
+from seekers import Color
 from seekers.grpc import seekers_proto_types as types
 from seekers.grpc.converters import *
+from seekers.hash_color import string_hash_color
 
 
 class GrpcSeekersClientError(Exception): ...
@@ -27,8 +29,12 @@ class GrpcSeekersRawClient:
     """A client for a Seekers gRPC game.
     It is called "raw" because it is nothing but a wrapper for the gRPC services."""
 
-    def __init__(self, token: str, address: str = "localhost:7777"):
-        self.token = token
+    _VERSION = 1
+
+    def __init__(self, name: str, address: str = "localhost:7777", color: Color = None):
+        self.name = name
+        self.color = string_hash_color(name) if color is None else color
+        self.token = None
 
         self.channel = grpc.insecure_channel(address)
         self.stub = pb2_grpc.SeekersStub(self.channel)
@@ -42,7 +48,17 @@ class GrpcSeekersRawClient:
     def join_session(self) -> str:
         """Try to join the game and return our player_id."""
         try:
-            return self.stub.JoinSession(SessionRequest(token=self.token)).id
+            reply: types.JoinReply = self.stub.Join(JoinRequest(name=self.name, color=convert_color_back(self.color)))
+            breakpoint()
+
+            if reply.version != self._VERSION:
+                raise GrpcSeekersClientError(
+                    f"Server version {reply.version} is not supported. Client version is {self._VERSION}."
+                )
+
+            self.token = reply.token
+
+            return reply.id
         except _InactiveRpcError as e:
             if e.code() in [grpc.StatusCode.UNAUTHENTICATED, grpc.StatusCode.INVALID_ARGUMENT]:
                 raise SessionTokenInvalidError(f"Session token {self.token!r} is invalid. It can't be empty.") from e
@@ -57,25 +73,23 @@ class GrpcSeekersRawClient:
             raise
 
     def server_properties(self) -> dict[str, str]:
-        return self.stub.PropertiesInfo(PropertiesRequest()).entries
+        return self.stub.Properties(PropertiesRequest()).entries
 
-    def entities(self) -> types._EntityReply:
-        return self.stub.EntityStatus(EntityRequest())
-
-    def players_info(self) -> types._PlayerReply:
-        return self.stub.PlayerStatus(PlayerRequest())
+    def status(self) -> types.StatusReply:
+        return self.stub.Status(StatusRequest(token=self.token))
 
     def send_command(self, id_: str, target: Vector, magnet: float) -> None:
         if self.channel_connectivity_status != grpc.ChannelConnectivity.READY:
             raise ServerUnavailableError("Channel is not ready. Or game ended.")
 
         try:
-            self.stub.CommandUnit(CommandRequest(token=self.token, id=id_, target=target, magnet=magnet))
+            self.stub.Command(CommandRequest(token=self.token, seeker_id=id_, target=target, magnet=magnet))
         except _InactiveRpcError as e:
             if e.code() == grpc.StatusCode.CANCELLED:
                 # We don't know why this happens.
                 # The CommandUnit procedure is called
                 # though, so we can just ignore the error.
+                # See GitHub https://github.com/seekers-dev/seekers-api/issues/8
                 ...
             else:
                 raise
@@ -88,12 +102,12 @@ class GrpcSeekersClient:
     """A client for a Seekers gRPC game. It contains a ``GrpcSeekersRawClient`` and implements a mainloop.
     The ``decide_function`` is called in a loop and the output of that function is sent to the server."""
 
-    def __init__(self, token: str, player_ai: seekers.LocalPlayerAI, address: str = "localhost:7777",
+    def __init__(self, name: str, player_ai: seekers.LocalPlayerAI, address: str = "localhost:7777",
                  safe_mode: bool = False):
         self._logger = logging.getLogger(self.__class__.__name__)
 
         self.player_ai = player_ai
-        self.client = GrpcSeekersRawClient(token, address)
+        self.client = GrpcSeekersRawClient(name, address, color=player_ai.preferred_color)
 
         self.safe_mode = safe_mode
         self.last_gametime = -1
@@ -120,6 +134,7 @@ class GrpcSeekersClient:
         # If we don't wait, there can be inconsistencies in
         # the server's replies.
         time.sleep(1)
+        # TODO: Try leaving this out since the message format is now different
 
         while 1:
             try:
@@ -135,78 +150,68 @@ class GrpcSeekersClient:
         return self._server_config
 
     @staticmethod
-    def convert_player_reply(player_reply: types._PlayerReply, all_seekers: dict[str, seekers.Seeker]
+    def convert_player_reply(camps: list[types.CampStatus], players: list[types.PlayerStatus],
+                             all_seekers: dict[str, seekers.Seeker]
                              ) -> tuple[dict[str, seekers.Player], dict[str, seekers.Camp]]:
         """Convert a PlayerReply to the respective Player and Camp objects.
         Set the owner of the seekers in all_seekers, too."""
 
-        camps, players = player_reply.camps, player_reply.players
-
         converted_players = {}
-        for p_id, p in players.items():
+        for player in players:
             # The player's camp attribute is not set yet. This is done when converting the camps.
-            converted_player = convert_player(p)
+            converted_player = convert_player(player)
 
-            for seeker_id in p.seeker_ids:
+            for seeker_id in player.seeker_ids:
                 try:
                     converted_seeker = all_seekers[seeker_id]
                 except KeyError as e:
                     raise GrpcSeekersClientError(
-                        f"Invalid Response: Player {p_id!r} has seeker {seeker_id!r} but it is not in "
+                        f"Invalid Response: Player {player.id!r} has seeker {seeker_id!r} but it is not in "
                         f"EntityReply.seekers."
                     ) from e
                 converted_player.seekers[seeker_id] = converted_seeker
                 converted_seeker.owner = converted_player
 
-            converted_players[p_id] = converted_player
+            converted_players[player.id] = converted_player
 
         assert all(s.owner is not None for s in all_seekers.values()), \
             GrpcSeekersClientError("Invalid Response: Some seekers have no owner.")
 
         converted_camps = {}
-        for c_id, c in camps.items():
+        for camp in camps:
             try:
-                owner = converted_players[c.player_id]
+                owner = converted_players[camp.player_id]
             except KeyError as e:
                 raise GrpcSeekersClientError(
-                    f"Invalid Response: Camp {c_id!r} has invalid owner {c.player_id!r}."
+                    f"Invalid Response: Camp {camp.id!r} has invalid owner {camp.player_id!r}."
                 ) from e
 
-            converted_camp = convert_camp(c, owner)
+            converted_camp = convert_camp(camp, owner)
 
             # Set the player's camp attribute as stated above.
             owner.camp = converted_camp
 
-            converted_camps[c_id] = converted_camp
+            converted_camps[camp.id] = converted_camp
 
         assert all(p.camp is not None for p in converted_players.values()), \
             GrpcSeekersClientError("Invalid Response: Some players have no camp.")
 
         return converted_players, converted_camps
 
-    def get_converted_player_reply(self, all_seekers: dict[str, seekers.Seeker]
-                                   ) -> tuple[dict[str, seekers.Player], dict[str, seekers.Camp]]:
-        if self._player_reply is None or self.safe_mode:
-            player_reply = self.client.players_info()
-
-            self._player_reply = self.convert_player_reply(player_reply, all_seekers)
-
-        return self._player_reply
-
     def get_ai_input(self) -> seekers.AIInput:
-        # wait for the next game tick
+        # Wait for the next game tick.
         while 1:
-            entity_reply = self.client.entities()
-            if entity_reply.passed_playtime != self.last_gametime:
+            status_reply = self.client.status()
+            if status_reply.passed_playtime != self.last_gametime:
                 break
 
             time.sleep(1 / 120)
 
-        if (entity_reply.passed_playtime - self.last_gametime) > 1:
-            self._logger.debug(f"Missed time: {entity_reply.passed_playtime - self.last_gametime - 1}")
+        if (status_reply.passed_playtime - self.last_gametime) > 1:
+            self._logger.debug(f"Missed time: {status_reply.passed_playtime - self.last_gametime - 1}")
 
-        self.last_gametime = entity_reply.passed_playtime
-        all_seekers, goals = entity_reply.seekers, entity_reply.goals
+        self.last_gametime = status_reply.passed_playtime
+        all_seekers, goals = status_reply.seekers, status_reply.goals
 
         config = self.get_server_config()
 
@@ -218,13 +223,13 @@ class GrpcSeekersClient:
             # this by setting self._player_reply to None.
 
             # noinspection PyTypeChecker
-            converted_seekers = {s_id: convert_seeker(s, None, config) for s_id, s in all_seekers.items()}
+            converted_seekers = {s.super.id: convert_seeker(s, None, config) for s in all_seekers}
             self._last_seekers = converted_seekers
             self._player_reply = None
         else:
-            # Just update the attributes of the seekers.
-            for s_id, seeker in all_seekers.items():
-                converted_seeker = self._last_seekers[s_id]
+            # Just update the attributes of the seekers to save time.
+            for seeker in all_seekers:
+                converted_seeker = self._last_seekers[seeker.super.id]
                 converted_seeker.position = convert_vector(seeker.super.position)
                 converted_seeker.velocity = convert_vector(seeker.super.velocity)
                 converted_seeker.target = convert_vector(seeker.target)
@@ -232,7 +237,14 @@ class GrpcSeekersClient:
 
             converted_seekers = self._last_seekers
 
-        converted_players, converted_camps = self.get_converted_player_reply(converted_seekers)
+        if self._player_reply is None or self.safe_mode:
+            self._player_reply = self.convert_player_reply(
+                status_reply.camps,
+                status_reply.players,
+                self._last_seekers
+            )
+
+        converted_players, converted_camps = self._player_reply
 
         try:
             me = converted_players[self.player_id]
@@ -240,7 +252,7 @@ class GrpcSeekersClient:
             raise GrpcSeekersClientError("Invalid Response: Own player_id not in PlayerReply.players.") from e
 
         converted_other_seekers = [s for s in converted_seekers.values() if s.owner != me]
-        converted_goals = [convert_goal(g, converted_camps, config) for g in goals.values()]
+        converted_goals = [convert_goal(g, converted_camps, config) for g in goals]
         converted_other_players = [p for p in converted_players.values() if p != me]
 
         if config.map_width is None or config.map_height is None:
@@ -256,7 +268,7 @@ class GrpcSeekersClient:
             me.camp,
             list(converted_camps.values()),
             converted_world,
-            entity_reply.passed_playtime,
+            status_reply.passed_playtime,
         )
 
     def tick(self):

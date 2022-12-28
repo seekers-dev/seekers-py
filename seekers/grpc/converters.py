@@ -10,25 +10,23 @@ from seekers.grpc import seekers_pb2_grpc as pb2_grpc
 from seekers.grpc import types
 import seekers
 
-SessionRequest: MessageMeta = getattr(pb2_grpc.seekers__pb2, "SessionRequest")
+JoinRequest: MessageMeta = getattr(pb2_grpc.seekers__pb2, "JoinRequest")
+JoinReply: MessageMeta = getattr(pb2_grpc.seekers__pb2, "JoinReply")
 PropertiesRequest: MessageMeta = getattr(pb2_grpc.seekers__pb2, "PropertiesRequest")
 PropertiesReply: MessageMeta = getattr(pb2_grpc.seekers__pb2, "PropertiesReply")
-SessionReply: MessageMeta = getattr(pb2_grpc.seekers__pb2, "SessionReply")
-EntityRequest: MessageMeta = getattr(pb2_grpc.seekers__pb2, "EntityRequest")
-EntityReply: MessageMeta = getattr(pb2_grpc.seekers__pb2, "EntityReply")
-PlayerRequest: MessageMeta = getattr(pb2_grpc.seekers__pb2, "PlayerRequest")
-PlayerReply: MessageMeta = getattr(pb2_grpc.seekers__pb2, "PlayerReply")
+StatusRequest: MessageMeta = getattr(pb2_grpc.seekers__pb2, "StatusRequest")
+StatusReply: MessageMeta = getattr(pb2_grpc.seekers__pb2, "StatusReply")
 CommandRequest: MessageMeta = getattr(pb2_grpc.seekers__pb2, "CommandRequest")
 CommandReply: MessageMeta = getattr(pb2_grpc.seekers__pb2, "CommandReply")
-GoalStatus: MessageMeta = getattr(pb2_grpc.seekers__pb2, "GoalStatus")
-PlayerStatus: MessageMeta = getattr(pb2_grpc.seekers__pb2, "PlayerStatus")
-CampStatus: MessageMeta = getattr(pb2_grpc.seekers__pb2, "CampStatus")
-SeekerStatus: MessageMeta = getattr(pb2_grpc.seekers__pb2, "SeekerStatus")
-PhysicalStatus: MessageMeta = getattr(pb2_grpc.seekers__pb2, "PhysicalStatus")
+GoalStatus: MessageMeta = getattr(StatusReply, "Goal")
+PlayerStatus: MessageMeta = getattr(StatusReply, "Player")
+CampStatus: MessageMeta = getattr(StatusReply, "Camp")
+SeekerStatus: MessageMeta = getattr(StatusReply, "Seeker")
+PhysicalStatus: MessageMeta = getattr(StatusReply, "Physical")
 Vector: MessageMeta = getattr(pb2_grpc.seekers__pb2, "Vector")
 
 
-def convert_vector(vector: types._Vector) -> seekers.Vector:
+def convert_vector(vector: types.Vector) -> seekers.Vector:
     return seekers.Vector(vector.x, vector.y)
 
 
@@ -36,7 +34,7 @@ def convert_vector_back(vector: seekers.Vector) -> Vector:
     return Vector(x=vector.x, y=vector.y)
 
 
-def convert_seeker(seeker: types._SeekerStatus, owner: seekers.Player, config: seekers.Config) -> seekers.Seeker:
+def convert_seeker(seeker: types.SeekerStatus, owner: seekers.Player, config: seekers.Config) -> seekers.Seeker:
     out = seekers.Seeker(
         id_=seeker.super.id,
         position=convert_vector(seeker.super.position),
@@ -75,7 +73,7 @@ def convert_seeker_back(seeker: seekers.InternalSeeker) -> SeekerStatus:
     return out
 
 
-def convert_goal(goal: types._GoalStatus, camps: dict[str, seekers.Camp], config: seekers.Config) -> seekers.Goal:
+def convert_goal(goal: types.GoalStatus, camps: dict[str, seekers.Camp], config: seekers.Config) -> seekers.Goal:
     out = seekers.Goal(
         id_=goal.super.id,
         position=convert_vector(goal.super.position),
@@ -111,7 +109,7 @@ def convert_color_back(color: tuple[int, int, int]):
     return f"0x{color[0]:02x}{color[1]:02x}{color[2]:02x}"
 
 
-def convert_player(player: types._PlayerStatus) -> seekers.Player:
+def convert_player(player: types.PlayerStatus) -> seekers.Player:
     out = seekers.Player(
         id=player.id,
         name=f"<{player.id}>",
@@ -133,7 +131,7 @@ def convert_player_back(player: seekers.Player) -> PlayerStatus:
     )
 
 
-def convert_camp(camp: types._CampStatus, owner: seekers.Player) -> seekers.Camp:
+def convert_camp(camp: types.CampStatus, owner: seekers.Player) -> seekers.Camp:
     out = seekers.Camp(
         id=camp.id,
         owner=owner,
