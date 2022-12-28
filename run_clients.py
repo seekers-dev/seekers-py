@@ -1,3 +1,5 @@
+import multiprocessing
+multiprocessing.set_start_method('spawn', force=True)
 from multiprocessing import Process
 import argparse
 import os
@@ -6,6 +8,22 @@ import logging
 from collections import defaultdict
 
 import seekers.grpc
+
+
+def run_ai(filepath: str, name: str, args: argparse.Namespace):
+    logging.basicConfig(
+        level=args.loglevel, style="{", format=f"[{name.ljust(18)}] {{levelname}}: {{message}}",
+        stream=sys.stdout, force=True
+    )
+
+    ai = seekers.LocalPlayerAI.from_file(filepath)
+
+    try:
+        seekers.grpc.GrpcSeekersClient(name, ai, args.address).run()
+    except seekers.grpc.ServerUnavailableError:
+        logging.error("Server unavailable. Check that it's running and that the address is correct.")
+    except seekers.grpc.GameFullError:
+        logging.error("Game already full.")
 
 
 def main():
@@ -35,25 +53,10 @@ def main():
     for arg in args.ai_files:
         name = ai_name(arg)
 
-        def run_ai(filepath: str, name: str):
-            logging.basicConfig(
-                level=args.loglevel, style="{", format=f"[{name.ljust(18)}] {{levelname}}: {{message}}",
-                stream=sys.stdout, force=True
-            )
-
-            ai = seekers.LocalPlayerAI.from_file(filepath)
-
-            try:
-                seekers.grpc.GrpcSeekersClient(name, ai, args.address).run()
-            except seekers.grpc.ServerUnavailableError:
-                logging.error("Server unavailable. Check that it's running and that the address is correct.")
-            except seekers.grpc.GameFullError:
-                logging.error("Game already full.")
-
         processes.append(
             Process(
                 target=run_ai,
-                args=(arg, name),
+                args=(arg, name, args),
                 daemon=True,
                 name=f"AI {name!r}"
             )
