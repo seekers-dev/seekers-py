@@ -13,8 +13,6 @@ import glob
 import pygame
 import random
 
-pygame.init()
-
 
 class GameFullError(Exception): ...
 

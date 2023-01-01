@@ -44,6 +44,8 @@ class GameRenderer:
         self.debug_mode = debug_mode
 
     def init(self, players: Iterable[InternalPlayer]):
+        pygame.init()
+
         for p in players:
             self.player_name_images[p.id] = self.font.render(p.name, True, p.color)
 
