@@ -60,6 +60,7 @@ class Config:
 
     flags_experimental_friction: bool
     flags_t_test: bool
+    flags_relative_drawing_to: str
 
     @property
     def updates_per_frame(self):
@@ -105,6 +106,7 @@ class Config:
 
             flags_experimental_friction=cp.getboolean("flags", "experimental-friction"),
             flags_t_test=cp.getboolean("flags", "t-test"),
+            flags_relative_drawing_to=cp.get("flags", "relative-drawing-to"),
         )
 
     @classmethod

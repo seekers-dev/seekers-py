@@ -74,7 +74,7 @@ class SeekersGame:
         self.camps = self.world.generate_camps(self.players.values(), self.config)
 
         # prepare graphics
-        self.renderer.init(self.players.values())
+        self.renderer.init(self.players.values(), self.goals)
 
         if self.grpc:
             self.grpc.start_game()
@@ -110,7 +110,6 @@ class SeekersGame:
                     break
 
             # draw graphics
-            self.renderer.reference = next(iter(self.seekers.values()))
             self.renderer.draw(self.players.values(), self.camps, self.goals, self.animations, self.clock)
 
             self.clock.tick(self.config.global_fps)

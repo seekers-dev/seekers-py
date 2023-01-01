@@ -1,5 +1,5 @@
 import pygame
-from typing import Iterable, Callable, Collection
+from typing import Iterable, Callable, Collection, Sequence
 
 from .hash_color import interpolate_color
 from .seekers_types import *
@@ -33,7 +33,7 @@ class ScoreAnimation(Animation):
 
 
 class GameRenderer:
-    def __init__(self, config: Config, reference: Physical = None, debug_mode: bool = False):
+    def __init__(self, config: Config, debug_mode: bool = False):
         self.font = pygame.font.SysFont("monospace", 20, bold=True)
         self.background_color = (0, 0, 30)
 
@@ -44,23 +44,21 @@ class GameRenderer:
         self.debug_mode = debug_mode
 
         self.world = World(self.config.map_width, self.config.map_height)
-
-        self.reference = reference
-
-        if reference is None:
-            self.reference = Physical("tmp", self.world.geometry * 0.5, Vector(0, 0), 0, 0, self.config)
+        self.reference = None
 
     def relative_pos(self, pos: Vector):
         if self.reference is None:
             return pos
 
-        return pos + (self.world.middle() - self.reference.position)
+        return pos + (self.world.middle() - self.reference())
 
-    def init(self, players: Iterable[InternalPlayer]):
+    def init(self, players: Iterable[InternalPlayer], goals: list[InternalGoal]):
         for p in players:
             self.player_name_images[p.id] = self.font.render(p.name, True, p.color)
 
         self.screen = pygame.display.set_mode(self.config.map_dimensions)
+
+        self.reference = self.parse_reference(list(players), goals)
 
     def draw_torus(self, func: Callable[[Vector], typing.Any], p1: Vector, p2: Vector):
         func(p1)
@@ -219,9 +217,41 @@ class GameRenderer:
         # draw student's t-test
         if self.config.flags_t_test:
             if len(players) == 2 and all(p.score > 0 for p in players):
-                p = self.students_ttest(players, relative=False)
+                p = self.students_ttest(players)
                 text = f"{p:.2e}"
             else:
                 text = "N/A"
 
             self.draw_text(f"T-Test: {text}", (255, 255, 255), pos, center=False)
+
+    def parse_reference(self, players: Sequence[Player], goals: Sequence[Goal]) -> Callable[[], Vector]:
+        parts = self.config.flags_relative_drawing_to.split("/")
+
+        start, *rest = parts
+
+        if start == "center":
+            return lambda: self.world.middle()
+
+        elif start == "player":
+            try:
+                player_index, seeker_index = rest
+
+                player = players[int(player_index)]
+                seeker = list(player.seekers.values())[int(seeker_index)]
+            except (ValueError, IndexError) as e:
+                raise ValueError("Config: flags.relative-drawing-to: Invalid goal reference.") from e
+
+            return lambda: seeker.position
+
+        elif start == "goal":
+            try:
+                goal_index, = rest
+                goal = goals[int(goal_index)]
+            except (ValueError, IndexError) as e:
+                raise ValueError("Config: flags.relative-drawing-to: Invalid goal reference.") from e
+
+            return lambda: goal.position
+
+        raise ValueError(
+            f"Config: flags.relative-drawing-to: Invalid reference {self.config.flags_relative_drawing_to!r}."
+        )
