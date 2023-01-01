@@ -210,10 +210,15 @@ class GrpcSeekersClient:
 
     def get_ai_input(self) -> seekers.AIInput:
         # Wait for the next game tick.
+        t = time.perf_counter()
         while 1:
             status_reply = self.client.status()
             if status_reply.passed_playtime != self.last_gametime:
                 break
+
+            if self.safe_mode and time.perf_counter() - t > 15:
+                raise GrpcSeekersClientError(f"Timeout while waiting for game tick. "
+                                             f"Server's clock did not advance. ({status_reply.passed_playtime}).")
 
             time.sleep(1 / 120)
 
@@ -232,6 +237,8 @@ class GrpcSeekersClient:
             # This is done in get_converted_player_reply. We ensure
             # this by setting self._player_reply to None.
 
+            self._logger.debug("Creating new Seeker objects.")
+
             # noinspection PyTypeChecker
             converted_seekers = {s.super.id: convert_seeker(s, None, config) for s in all_seekers}
             self._last_seekers = converted_seekers
@@ -248,6 +255,7 @@ class GrpcSeekersClient:
             converted_seekers = self._last_seekers
 
         if self._player_reply is None or self.safe_mode:
+            self._logger.debug("Updating Player and Camp objects.")
             self._player_reply = self.convert_player_reply(
                 status_reply.camps,
                 status_reply.players,
@@ -282,7 +290,7 @@ class GrpcSeekersClient:
         )
 
     def tick(self):
-        """Call the ``decide_function`` and send the output to the server."""
+        """Call the decide function and send the output to the server."""
 
         ai_input = self.get_ai_input()
 
