@@ -1,5 +1,3 @@
-import multiprocessing
-multiprocessing.set_start_method('spawn', force=True)
 from multiprocessing import Process
 import argparse
 import os
