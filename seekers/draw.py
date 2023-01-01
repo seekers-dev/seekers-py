@@ -53,6 +53,8 @@ class GameRenderer:
         return pos + (self.world.middle() - self.reference())
 
     def init(self, players: Iterable[InternalPlayer], goals: list[InternalGoal]):
+        pygame.init()
+
         for p in players:
             self.player_name_images[p.id] = self.font.render(p.name, True, p.color)
 
