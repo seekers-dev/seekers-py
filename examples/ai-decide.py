@@ -8,8 +8,8 @@ def foo(x):
 
 def decide(own_seekers: list[Seeker], other_seekers: list[Seeker], all_seekers: list[Seeker], goals: list[Goal],
            other_players: list[Player], own_camp: Camp, camps: list[Camp], world: World, passed_time: float):
-    """This function gets called every tick the game processes;
-    Only the target and the magnet state of the seekers you returned affect the game"""
+    """This function gets called every tick the game processes.
+    Only the target and the magnet state of the seekers you return affect the game."""
     # print(tick)
     # print(foo(tick))
 
@@ -25,4 +25,5 @@ def decide(own_seekers: list[Seeker], other_seekers: list[Seeker], all_seekers: 
             # otherwise it disables its magnet and aims for the goal
             s.disable_magnet()
             s.target = g.position
+
     return own_seekers

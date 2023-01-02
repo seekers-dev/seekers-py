@@ -1,64 +1,59 @@
-"""This file contains scaffolding classes that represent the gRPC types. This is useful for type hinting."""
-
-import dataclasses
+"""This file contains scaffolding classes that represent select gRPC types. This is useful for type hinting."""
 
 
-@dataclasses.dataclass
-class _Vector:
+class Vector:
     x: float
     y: float
 
 
-@dataclasses.dataclass
-class _CampStatus:
+class CampStatus:
     id: str
     player_id: str
-    position: _Vector
+    position: Vector
     width: float
     height: float
 
 
-@dataclasses.dataclass
-class _PhysicalStatus:
+class PhysicalStatus:
     id: str
-    acceleration: _Vector
-    position: _Vector
-    velocity: _Vector
+    acceleration: Vector
+    position: Vector
+    velocity: Vector
 
 
-@dataclasses.dataclass
-class _SeekerStatus:
-    super: _PhysicalStatus
+class SeekerStatus:
+    super: PhysicalStatus
     player_id: str
     magnet: float
-    target: _Vector
+    target: Vector
     disable_counter: float
 
 
-@dataclasses.dataclass
-class _GoalStatus:
-    super: _PhysicalStatus
+class GoalStatus:
+    super: PhysicalStatus
     camp_id: str
     time_owned: float
 
 
-@dataclasses.dataclass
-class _EntityReply:
-    seekers: dict[str, _SeekerStatus]
-    goals: dict[str, _GoalStatus]
-    passed_playtime: float
-
-
-@dataclasses.dataclass
-class _PlayerStatus:
+class PlayerStatus:
     id: str
-    camp_id: str
     seeker_ids: list[str]
+    camp_id: str
+    name: str
     color: str
     score: int
 
 
-@dataclasses.dataclass
-class _PlayerReply:
-    players: dict[str, _PlayerStatus]
-    camps: dict[str, _CampStatus]
+class StatusReply:
+    players: list[PlayerStatus]
+    camps: list[CampStatus]
+    seekers: list[SeekerStatus]
+    goals: list[GoalStatus]
+
+    passed_playtime: float
+
+
+class JoinReply:
+    token: str
+    id: str
+    version: str
