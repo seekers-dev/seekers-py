@@ -19,7 +19,8 @@ def run_ai(filepath: str, name: str, args: argparse.Namespace):
     try:
         seekers.grpc.GrpcSeekersClient(name, ai, args.address).run()
     except seekers.grpc.ServerUnavailableError:
-        logging.error("Server unavailable. Check that it's running and that the address is correct.")
+        logging.error(f"Server at {args.address!r} unavailable. "
+                      f"Check that it's running and that the address is correct.")
     except seekers.grpc.GameFullError:
         logging.error("Game already full.")
 
