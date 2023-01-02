@@ -124,7 +124,8 @@ class GrpcSeekersClient:
         self._last_time_ai_updated = time.perf_counter()
 
     def join(self):
-        self._logger.info(f"Joining session with name={self.client.name!r}, color={self.client.color!r}")
+        self._logger.info(f"Joining session with name={self.client.name!r}, "
+                          f"color={convert_color_back(self.client.color)}")
         self.player_id = self.client.join_session()
 
         self._logger.info(f"Joined session as {self.player_id!r}")
@@ -335,7 +336,8 @@ class GrpcSeekersServicer(pb2_grpc.SeekersServicer):
 
         # create new player
         player = seekers.GRPCClientPlayer(
-            seekers.get_id("Player"), requested_name, 0, {}
+            seekers.get_id("Player"), requested_name, 0, {},
+            preferred_color=convert_color(request.color)
         )
 
         # add player to game

@@ -65,7 +65,7 @@ class SeekersGame:
                 (id_ := get_id("Seeker")): InternalSeeker(id_, self.world.random_position(), Vector(), p, self.config)
                 for _ in range(self.config.global_seekers)
             }
-            p.color = self.get_new_player_color(p.name)
+            p.color = self.get_new_player_color(p)
 
         # set up camps
         self.camps = self.world.generate_camps(self.players.values(), self.config)
@@ -173,9 +173,12 @@ class SeekersGame:
             p = self.renderer.students_ttest(self.players.values())
             print(f"T-Test (probability of null hypothesis): {p:.2e} ({p:.2%})")
 
-    def get_new_player_color(self, name: str) -> Color:
+    def get_new_player_color(self, player: InternalPlayer) -> Color:
         old_colors = [p.color for p in self.players.values() if p.color is not None]
-        preferred = hash_color.string_hash_color(name)
+
+        preferred = (
+            hash_color.string_hash_color(player.name) if player.preferred_color is None else player.preferred_color
+        )
 
         return hash_color.pick_new(old_colors, preferred, threshold=self.config.global_color_threshold)
 

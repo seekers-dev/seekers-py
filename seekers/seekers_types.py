@@ -467,6 +467,8 @@ class InternalPlayer(Player):
 
     debug_drawings: list = dataclasses.field(init=False, default_factory=list)
 
+    preferred_color: Color | None = dataclasses.field(init=False, default=None)
+
     def to_ai_input(self) -> Player:
         player = Player(self.id, self.name, self.score, {})
         player.seekers = {id_: s.to_ai_input(player) for id_, s in self.seekers.items()}
@@ -512,13 +514,23 @@ class LocalPlayerAI:
 
             mod = compile("".join(code), filepath, "exec")
 
-            try:
-                mod_dict = {}
-                exec(mod, mod_dict)
 
-                return mod_dict["decide"], mod_dict.get("__color__", None)
-            except Exception as e:
-                raise InvalidAiOutputError(f"AI {filepath!r} does not have a 'decide' function.") from e
+            mod_dict = {}
+            exec(mod, mod_dict)
+
+            preferred_color = mod_dict.get("__color__", None)
+
+            if preferred_color is not None:
+                if not (isinstance(preferred_color, tuple) or isinstance(preferred_color, list)):
+                    raise TypeError(f"__color__ must be a tuple or list, not {type(preferred_color)!r}.")
+
+                if len(preferred_color) != 3:
+                    raise ValueError(f"__color__ must be a tuple or list of length 3, not {len(preferred_color)}.")
+
+            if "decide" not in mod_dict:
+                raise KeyError(f"AI {filepath!r} does not have a 'decide' function.") from e
+
+            return mod_dict["decide"], preferred_color
         except Exception as e:
             # print(f"Error while loading AI {filepath!r}", file=sys.stderr)
             # traceback.print_exc(file=sys.stderr)
@@ -549,6 +561,10 @@ class LocalPlayer(InternalPlayer):
 
     _thread_pool: ThreadPool = dataclasses.field(init=False, default_factory=lambda: ThreadPool(1))
     _waiting: int = dataclasses.field(init=False, default=0)
+
+    @property
+    def preferred_color(self) -> Color | None:
+        return self.ai.preferred_color
 
     def get_ai_input(self,
                      world: "World",
@@ -681,9 +697,10 @@ class LocalPlayer(InternalPlayer):
 class GRPCClientPlayer(InternalPlayer):
     """A player whose decide function is called via a gRPC server and client. See README.md new method."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, preferred_color: Color | None = None, **kwargs):
         super().__init__(*args, **kwargs)
         self.was_updated = threading.Event()
+        self.preferred_color = preferred_color
 
     def wait_for_update(self):
         timeout = 5  # seconds
