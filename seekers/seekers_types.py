@@ -60,6 +60,7 @@ class Config:
 
     flags_experimental_friction: bool
     flags_t_test: bool
+    flags_relative_drawing_to: str
 
     @property
     def updates_per_frame(self):
@@ -105,6 +106,7 @@ class Config:
 
             flags_experimental_friction=cp.getboolean("flags", "experimental-friction"),
             flags_t_test=cp.getboolean("flags", "t-test"),
+            flags_relative_drawing_to=cp.get("flags", "relative-drawing-to"),
         )
 
     @classmethod
@@ -728,6 +730,11 @@ class World:
     def normalize_position(self, pos: Vector):
         pos.x -= math.floor(pos.x / self.width) * self.width
         pos.y -= math.floor(pos.y / self.height) * self.height
+
+    def normalized_position(self,pos: Vector):
+        tmp = pos
+        self.normalize_position(tmp)
+        return tmp
 
     @property
     def geometry(self) -> Vector:

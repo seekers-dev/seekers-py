@@ -40,7 +40,10 @@ class SeekersGame:
         self.goals = []
         self.camps = []
 
-        self.renderer = draw.GameRenderer(config, debug)
+        self.renderer = draw.GameRenderer(
+            self.config,
+            debug_mode=self.debug
+        )
         self.animations = []
 
         self.ticks = 0
@@ -69,7 +72,7 @@ class SeekersGame:
         self.camps = self.world.generate_camps(self.players.values(), self.config)
 
         # prepare graphics
-        self.renderer.init(self.players.values())
+        self.renderer.init(self.players.values(), self.goals)
 
         if self.grpc:
             self.grpc.start_game()
