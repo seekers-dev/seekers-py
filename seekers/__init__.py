@@ -47,7 +47,7 @@ class SeekersGame:
 
     def start(self):
         """Start the game. Run the mainloop and block until the game is over."""
-        self._logger.info(f"Starting game. (Seed: {self.seed})")
+        self._logger.info(f"Starting game. (Seed: {self.seed}, Players: {len(self.players)})")
 
         self.clock = pygame.time.Clock()
 
@@ -117,24 +117,34 @@ class SeekersGame:
             self.grpc.stop()
 
     def listen(self):
-        """Start the gRPC server. Block until all players have connected
-        unless global.auto-play is set and unless grpc is disabled."""
+        """Block until all players have connected unless global.auto-play is set.
+        This may start a gRPC server unless gRPC is disabled."""
+
+        def wait_for_players():
+            last_diff = None
+            while len(self.players) < self.config.global_players:
+                new_diff = self.config.global_players - len(self.players)
+
+                if new_diff != last_diff:
+                    self._logger.info(
+                        f"Waiting for players to connect: "
+                        f"{self.config.global_players - len(self.players)}/{self.config.global_players}"
+                    )
+                    last_diff = new_diff
+
+                time.sleep(0.1)
+
+        if self.config.global_auto_play:
+            return
+
+        if len(self.players) >= self.config.global_players:
+            # already enough players
+            return
+
         if self.grpc:
             self.grpc.start()
 
-            if not self.config.global_auto_play:
-                last_diff = None
-
-                while len(self.players) < self.config.global_players:
-                    new_diff = self.config.global_players - len(self.players)
-
-                    if new_diff != last_diff:
-                        self._logger.info(
-                            f"Waiting for players to connect: {self.config.global_players - len(self.players)}"
-                        )
-                        last_diff = new_diff
-
-                    time.sleep(0.1)
+            wait_for_players()
 
     @staticmethod
     def load_local_players(ai_locations: typing.Iterable[str]) -> dict[str, InternalPlayer]:
@@ -155,7 +165,8 @@ class SeekersGame:
         return out
 
     def add_player(self, player: InternalPlayer):
-        """Add a player to the game and raise a GameFullError if the game is full."""
+        """Add a player to the game and raise a GameFullError if the game is full.
+        This function is used by the gRPC server."""
         if len(self.players) >= self.config.global_players:
             raise GameFullError(
                 f"Game full. Cannot add more players. Max player count is {self.config.global_players}."
