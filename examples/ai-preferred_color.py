@@ -1,4 +1,4 @@
-__color__ = (255, 255, 255, 9)
+__color__ = (255, 255, 255)
 
 
 def decide(own_seekers, *_):
