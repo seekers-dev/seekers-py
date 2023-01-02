@@ -514,12 +514,10 @@ class LocalPlayerAI:
 
             mod = compile("".join(code), filepath, "exec")
 
-
             mod_dict = {}
             exec(mod, mod_dict)
 
             preferred_color = mod_dict.get("__color__", None)
-
             if preferred_color is not None:
                 if not (isinstance(preferred_color, tuple) or isinstance(preferred_color, list)):
                     raise TypeError(f"__color__ must be a tuple or list, not {type(preferred_color)!r}.")
@@ -528,7 +526,7 @@ class LocalPlayerAI:
                     raise ValueError(f"__color__ must be a tuple or list of length 3, not {len(preferred_color)}.")
 
             if "decide" not in mod_dict:
-                raise KeyError(f"AI {filepath!r} does not have a 'decide' function.") from e
+                raise KeyError(f"AI {filepath!r} does not have a 'decide' function.")
 
             return mod_dict["decide"], preferred_color
         except Exception as e:
@@ -536,7 +534,7 @@ class LocalPlayerAI:
             # traceback.print_exc(file=sys.stderr)
             # print(file=sys.stderr)
 
-            raise InvalidAiOutputError(f"Error while loading AI {filepath!r}. Dummy AIs are not allowed.") from e
+            raise InvalidAiOutputError(f"Error while loading AI {filepath!r}. Dummy AIs are not supported.") from e
 
     @classmethod
     def from_file(cls, filepath: str) -> "LocalPlayerAI":
