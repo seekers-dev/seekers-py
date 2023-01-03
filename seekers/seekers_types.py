@@ -19,7 +19,9 @@ _IDS = defaultdict(list)
 
 
 def get_id(obj: str):
-    while (id_ := random.randint(0, 2 ** 32)) in _IDS[obj]:
+    rng = random.Random(obj)
+
+    while (id_ := rng.randint(0, 2 ** 32)) in _IDS[obj]:
         ...
 
     _IDS[obj].append(id_)
@@ -27,7 +29,7 @@ def get_id(obj: str):
     return f"py-seekers.{obj}@{id_}"
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass
 class Config:
     """Configuration for the Seekers game."""
     global_auto_play: bool
@@ -690,7 +692,7 @@ class LocalPlayer(InternalPlayer):
         )
 
     def __del__(self):
-        # to prevent exception, when the program closes
+        # to prevent exception when the program closes
         self._thread_pool.terminate()
 
 
@@ -700,6 +702,7 @@ class GRPCClientPlayer(InternalPlayer):
     def __init__(self, *args, preferred_color: Color | None = None, **kwargs):
         super().__init__(*args, **kwargs)
         self.was_updated = threading.Event()
+        self.num_updates = 0
         self.preferred_color = preferred_color
 
     def wait_for_update(self):

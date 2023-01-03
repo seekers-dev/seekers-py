@@ -22,12 +22,13 @@ class SeekersGame:
 
     def __init__(self, local_ai_locations: typing.Iterable[str], config: Config,
                  grpc_address: typing.Literal[False] | str = "localhost:7777", seed: float = 42,
-                 debug: bool = True):
+                 debug: bool = True, print_scores: bool = True):
         self._logger = logging.getLogger("SeekersGame")
 
         self.config = config
         self.debug = debug
         self.seed = seed
+        self.do_print_scores = print_scores
 
         if grpc_address:
             from .grpc import GrpcSeekersServer
@@ -84,6 +85,7 @@ class SeekersGame:
 
     def mainloop(self):
         """Start the game. Block until the game is over."""
+        random.seed(self.seed)
         running = True
 
         while running:
@@ -114,7 +116,8 @@ class SeekersGame:
 
         self._logger.info(f"Game over. (Ticks: {self.ticks:_})")
 
-        self.print_scores()
+        if self.do_print_scores:
+            self.print_scores()
 
         if self.grpc:
             self.grpc.stop()
@@ -168,7 +171,7 @@ class SeekersGame:
         return out
 
     def add_player(self, player: InternalPlayer):
-        """Add a player to the game and raise a GameFullError if the game is full.
+        """Add a player to the game while it may be running and raise a GameFullError if the game is full.
         This function is used by the gRPC server."""
         if len(self.players) >= self.config.global_players:
             raise GameFullError(
@@ -176,6 +179,8 @@ class SeekersGame:
             )
 
         self.players |= {player.id: player}
+
+        # TODO: If the game is running already, add a camp and seekers
 
     def print_scores(self):
         for player in sorted(self.players.values(), key=lambda p: p.score, reverse=True):

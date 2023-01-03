@@ -40,6 +40,8 @@ def color_distance(c1: Color, c2: Color) -> float:
 
 def pick_new(old: list[Color], new: Color, threshold: float = 200) -> Color:
     """Pick a new color that is sufficiently different from the old ones."""
+    rng = random.Random()
+
     if len(old) == 0:
         return new
 
@@ -58,7 +60,7 @@ def pick_new(old: list[Color], new: Color, threshold: float = 200) -> Color:
         scatter = 2 * (threshold - d) / 3
 
         _new = tuple(map(
-            lambda x: min(255, max(0, int(x + random.uniform(-scatter, scatter)))),
+            lambda x: min(255, max(0, int(x + rng.uniform(-scatter, scatter)))),
             new
         ))
 

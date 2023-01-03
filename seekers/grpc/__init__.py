@@ -217,9 +217,9 @@ class GrpcSeekersClient:
             if status_reply.passed_playtime != self.last_gametime:
                 break
 
-            if self.safe_mode and time.perf_counter() - t > 15:
+            if self.safe_mode and time.perf_counter() - t > 4:
                 raise GrpcSeekersClientError(f"Timeout while waiting for game tick. "
-                                             f"Server's clock did not advance. ({status_reply.passed_playtime}).")
+                                             f"Server's clock did not advance. (t={status_reply.passed_playtime}).")
 
             time.sleep(1 / 120)
 
@@ -398,8 +398,12 @@ class GrpcSeekersServicer(pb2_grpc.SeekersServicer):
         seeker.magnet.strength = request.magnet
 
         # noinspection PyTypeChecker
-        ai: seekers.GRPCClientPlayer = seeker.owner
-        ai.was_updated.set()
+        player: seekers.GRPCClientPlayer = seeker.owner
+        # wait until the AI has updated all its seekers
+        player.num_updates += 1
+        if player.num_updates >= len(player.seekers):
+            player.was_updated.set()
+        player.num_updates %= len(player.seekers)
 
         return CommandReply()
 
@@ -417,8 +421,14 @@ class GrpcSeekersServer:
         pb2_grpc.add_SeekersServicer_to_server(GrpcSeekersServicer(seekers_game, self.game_start_event), self.server)
         self.server.add_insecure_port(address)
 
+        self._is_running = False
+
     def start(self):
+        if self._is_running:
+            return
+
         self.server.start()
+        self._is_running = True
 
     def start_game(self):
         self.game_start_event.set()
