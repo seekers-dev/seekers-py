@@ -34,7 +34,8 @@ class ScoreAnimation(Animation):
 
 class GameRenderer:
     def __init__(self, config: Config, debug_mode: bool = False):
-        self.font = pygame.font.SysFont("monospace", 20, bold=True)
+        pygame.font.init()
+        self.font = pygame.font.SysFont(["Cascadia Code", "Fira Code", "Consolas", "monospace"], 20, bold=True)
         self.background_color = (0, 0, 30)
 
         self.player_name_images = {}
@@ -83,7 +84,7 @@ class GameRenderer:
 
         dx, dy = self.font.size(text)
         adj_pos = pos - Vector(dx, dy) / 2 if center else pos
-        self.screen.blit(self.font.render(text, False, color), tuple(adj_pos))
+        self.screen.blit(self.font.render(text, True, color), tuple(adj_pos))
 
         # no torus drawing for text
 
