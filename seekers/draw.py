@@ -57,7 +57,15 @@ class GameRenderer:
         pygame.init()
 
         for p in players:
-            self.player_name_images[p.id] = self.font.render(p.name, True, p.color)
+            name = p.name
+
+            if self.debug_mode:
+                if isinstance(p, GRPCClientPlayer):
+                    name += f" (gRPC)"
+                elif isinstance(p, LocalPlayer):
+                    name += f" (local)"
+
+            self.player_name_images[p.id] = self.font.render(name, True, p.color)
 
         self.screen = pygame.display.set_mode(self.config.map_dimensions)
 
