@@ -696,7 +696,7 @@ class LocalPlayer(InternalPlayer):
         self._thread_pool.terminate()
 
 
-class GRPCClientPlayer(InternalPlayer):
+class GrpcClientPlayer(InternalPlayer):
     """A player whose decide function is called via a gRPC server and client. See README.md new method."""
 
     def __init__(self, *args, preferred_color: Color | None = None, **kwargs):
@@ -712,7 +712,7 @@ class GRPCClientPlayer(InternalPlayer):
 
         if not was_updated:
             raise TimeoutError(
-                f"GRPCClientPlayer {self.name!r} did not update in time. (Timeout is {timeout} seconds.)"
+                f"GrpcClientPlayer {self.name!r} did not update in time. (Timeout is {timeout} seconds.)"
             )
 
         self.was_updated.clear()

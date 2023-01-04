@@ -60,7 +60,7 @@ class GameRenderer:
             name = p.name
 
             if self.debug_mode:
-                if isinstance(p, GRPCClientPlayer):
+                if isinstance(p, GrpcClientPlayer):
                     name += f" (gRPC)"
                 elif isinstance(p, LocalPlayer):
                     name += f" (local)"

@@ -321,7 +321,7 @@ class GrpcSeekersServicer(pb2_grpc.SeekersServicer):
             i += 1
 
         # create new player
-        player = seekers.GRPCClientPlayer(
+        player = seekers.GrpcClientPlayer(
             seekers.get_id("Player"), requested_name, 0, {},
             preferred_color=convert_color(request.color)
         )
@@ -382,7 +382,7 @@ class GrpcSeekersServicer(pb2_grpc.SeekersServicer):
         seeker.magnet.strength = request.magnet
 
         # noinspection PyTypeChecker
-        player: seekers.GRPCClientPlayer = seeker.owner
+        player: seekers.GrpcClientPlayer = seeker.owner
         # wait until the AI has updated all its seekers
         player.num_updates += 1
         if player.num_updates >= len(player.seekers):
