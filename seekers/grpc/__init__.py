@@ -85,18 +85,7 @@ class GrpcSeekersRawClient:
         if self.channel_connectivity_status != grpc.ChannelConnectivity.READY:
             raise ServerUnavailableError("Channel is not ready. Or game ended.")
 
-        try:
-            self.stub.Command(CommandRequest(token=self.token, seeker_id=id_, target=target, magnet=magnet))
-        except _InactiveRpcError as e:
-            if e.code() == grpc.StatusCode.CANCELLED:
-                # We don't know why this happens.
-                # The CommandUnit procedure is called
-                # though, so we can just ignore the error.
-                # TODO: Is this still the case?
-                # See GitHub https://github.com/seekers-dev/seekers-api/issues/8
-                ...
-            else:
-                raise
+        self.stub.Command(CommandRequest(token=self.token, seeker_id=id_, target=target, magnet=magnet))
 
     def __del__(self):
         self.channel.close()
@@ -133,13 +122,8 @@ class GrpcSeekersClient:
 
     def run(self):
         """Join and start the mainloop. This function blocks until the game ends."""
-        self.join()
-
-        # Wait for the server to set up players and seekers.
-        # If we don't wait, there can be inconsistencies in
-        # the server's replies.
-        time.sleep(1)
-        # TODO: Try leaving this out since the message format is now different
+        if not self.player_id:
+            self.join()
 
         while 1:
             try:
@@ -153,6 +137,8 @@ class GrpcSeekersClient:
                     break
                 else:
                     raise
+            except AssertionError as e:
+                self._logger.error(f"Assertion not met: {e.args[0]!r}")
 
     def get_server_config(self):
         if self._server_config is None or self.safe_mode:
@@ -363,9 +349,7 @@ class GrpcSeekersServicer(pb2_grpc.SeekersServicer):
         self.game_start_event.wait()
 
         players = [
-            # filter out players whose camp has not been set yet, meaning they are still uninitialized
-            # TODO: Do we still need this?
-            convert_player_back(p) for p in self.seekers_game.players.values() if p.camp is not None
+            convert_player_back(p) for p in self.seekers_game.players.values()
         ]
         camps = [convert_camp_back(c) for c in self.seekers_game.camps]
 
