@@ -337,6 +337,7 @@ class GrpcSeekersServicer(pb2_grpc.SeekersServicer):
         self._logger.info(f"Player {player.name!r} joined the game. ({player.id})")
         # return player id
         # token is just the player id, we don't need something more complex for now
+        # TODO: add tokens, this is very unsafe, AIs can impersonate other players
         return JoinReply(token=player.id, id=player.id, version=_VERSION)
 
     def Properties(self, request: PropertiesRequest, context) -> PropertiesReply:
