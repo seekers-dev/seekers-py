@@ -112,7 +112,7 @@ def convert_color_back(color: tuple[int, int, int]):
 def convert_player(player: types.PlayerStatus) -> seekers.Player:
     out = seekers.Player(
         id=player.id,
-        name=f"<{player.id}>",
+        name=player.name,
         score=player.score,
         seekers={}
     )
