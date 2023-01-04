@@ -170,7 +170,7 @@ class GameRenderer:
         self.draw_halo(seeker, color)
 
         if self.debug_mode:
-            self.draw_text(debug_str, (255, 255, 255), seeker.position)
+            self.draw_text(debug_str, (0, 0, 0), seeker.position)
 
     def draw_halo(self, seeker: InternalSeeker, color: Color):
         adjpos = seeker.position
