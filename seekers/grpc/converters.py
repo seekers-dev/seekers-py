@@ -62,15 +62,13 @@ def convert_physical_back(physical: seekers.Physical) -> PhysicalStatus:
 
 
 def convert_seeker_back(seeker: seekers.InternalSeeker) -> SeekerStatus:
-    out = SeekerStatus(
+    return SeekerStatus(
         super=convert_physical_back(seeker),
         player_id=seeker.owner.id,
         magnet=seeker.magnet.strength,
         target=convert_vector_back(seeker.target),
         disable_counter=seeker.disabled_counter
     )
-
-    return out
 
 
 def convert_goal(goal: types.GoalStatus, camps: dict[str, seekers.Camp], config: seekers.Config) -> seekers.Goal:

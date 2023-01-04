@@ -325,9 +325,10 @@ class InternalGoal(InternalPhysical, Goal):
         else:
             return False
 
-    def to_ai_input(self) -> Goal:
-        g = Goal(self.id, self.position, self.velocity, self.mass, self.radius, self.config)
-        g.owner = self.owner
+    def to_ai_input(self, players: dict[str, Player]) -> Goal:
+        # TODO: config object needs to be copied
+        g = Goal(self.id, self.position.copy(), self.velocity.copy(), self.mass, self.radius, self.config)
+        g.owner = None if self.owner is None else players[self.owner.id]
         g.owned_for = self.owned_for
         return g
 
@@ -437,8 +438,9 @@ class InternalSeeker(InternalPhysical, Seeker):
         InternalPhysical.collision(self, other, world)
 
     def to_ai_input(self, owner: "Player") -> Seeker:
-        s = Seeker(self.id, self.position, self.velocity, self.mass, self.radius, owner, self.config)
+        s = Seeker(self.id, self.position.copy(), self.velocity.copy(), self.mass, self.radius, owner, self.config)
         s.disabled_counter = self.disabled_counter
+        s.target = self.target.copy()
 
         return s
 
@@ -475,7 +477,7 @@ class InternalPlayer(Player):
 
     def to_ai_input(self) -> Player:
         player = Player(self.id, self.name, self.score, {})
-        player.seekers = {id_: s.to_ai_input(player) for id_, s in self.seekers.items()}
+        player.seekers = {s.id: s.to_ai_input(player) for s in self.seekers.values()}
         player.camp = self.camp.to_ai_input(player)
 
         return player
@@ -574,15 +576,15 @@ class LocalPlayer(InternalPlayer):
                      _players: dict[str, "InternalPlayer"],
                      time: float
                      ) -> AIInput:
-        players = {id_: p.to_ai_input() for id_, p in _players.items()}
+        players = {p.id: p.to_ai_input() for p in _players.values()}
         me = players[self.id]
         my_camp = me.camp
         my_seekers = list(me.seekers.values())
         other_seekers = [s for p in players.values() for s in p.seekers.values() if p is not me]
         all_seekers = my_seekers + other_seekers
-        camps = [p.camp for p in players.values() if p is not me]
+        camps = [p.camp for p in players.values()]
 
-        goals = [g.to_ai_input() for g in _goals]
+        goals = [g.to_ai_input(players) for g in _goals]
 
         return my_seekers, other_seekers, all_seekers, goals, list(players.values()), my_camp, camps, world, time
 

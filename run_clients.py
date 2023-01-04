@@ -39,7 +39,7 @@ def main():
     _AIS = defaultdict(int)
 
     def ai_name(filepath: str) -> str:
-        name, _ = os.path.splitext(os.path.basename(filepath))
+        name, _ = os.path.splitext(filepath)
 
         _AIS[name] += 1
 
