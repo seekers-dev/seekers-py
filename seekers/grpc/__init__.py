@@ -132,7 +132,8 @@ class GrpcSeekersClient:
                 self._logger.info("Game ended.")
                 break
             except grpc._channel._InactiveRpcError as e:
-                if e.code() == grpc.StatusCode.UNAVAILABLE:
+                if e.code() in {grpc.StatusCode.UNAVAILABLE, grpc.StatusCode.CANCELLED}:
+                    # if cancelled, assume game has ended
                     self._logger.info("Game ended.")
                     break
                 else:
