@@ -1,10 +1,9 @@
 import os
 import threading
-import time
 import unittest
 
-from .. import SeekersGame, Config, LocalPlayerAI
-from ..grpc import GrpcSeekersClient
+from seekers import SeekersGame, Config, LocalPlayerAI
+from seekers.grpc import GrpcSeekersClient
 
 
 class TestSeekers(unittest.TestCase):
@@ -33,34 +32,39 @@ class TestSeekers(unittest.TestCase):
         prev_speed = None
 
         for speed in 1, 1, 10, 10, 20, 40:
-            new_scores = nogrpc_game(
-                playtime=2000,
-                speed=speed,
-                players=2,
-                seed=42,
-                filepaths=["examples/ai-magnets.py", "examples/ai-simple.py"]
-            )
+            with self.subTest(msg=f"Speed: {speed}", speed=speed):
+                new_scores = nogrpc_game(
+                    playtime=2000,
+                    speed=speed,
+                    players=2,
+                    seed=42,
+                    filepaths=["examples/ai-magnets.py", "examples/ai-simple.py"]
+                )
 
-            if scores is not None: self.assertEqual(
-                new_scores, scores, msg=f"Outcome at speed {speed} is different from speed {prev_speed}."
-            )
+                if scores is not None:
+                    self.assertEqual(
+                        new_scores, scores, msg=f"Outcome at speed {speed} is different from speed {prev_speed}."
+                    )
 
-            scores = new_scores
-            prev_speed = speed
+                scores = new_scores
+                prev_speed = speed
+
+
+def start_grpc_client(filepath: str, address: str, joined_event: threading.Event):
+    name, _ = os.path.splitext(filepath)
+
+    client = GrpcSeekersClient(
+        name=name,
+        player_ai=LocalPlayerAI.from_file(filepath),
+        address=address
+    )
+    client.join()
+    joined_event.set()
+    client.run()
 
 
 def grpc_game(playtime: int, speed: int, players: int, seed: int, filepaths: list[str],
               address: str = "localhost:7778") -> dict[str, int]:
-    def start_grpc_client(filepath: str):
-        name, _ = os.path.splitext(filepath)
-
-        client = GrpcSeekersClient(
-            name=name,
-            player_ai=LocalPlayerAI.from_file(filepath),
-            address=address
-        )
-        client.run()
-
     config = Config.from_filepath("default_config.ini")
 
     config.global_fps = 1000
@@ -74,26 +78,26 @@ def grpc_game(playtime: int, speed: int, players: int, seed: int, filepaths: lis
         config=config,
         grpc_address=address,
         seed=seed,
-        debug=False,
+        debug=True,
         print_scores=False
     )
 
     game.grpc.start()
 
-    threads = []
+    processes = []
     for filepath in filepaths:
-        thread = threading.Thread(target=start_grpc_client, args=(filepath,))
-        thread.start()
+        event = threading.Event()
+        process = threading.Thread(target=start_grpc_client, args=(filepath, address, event))
+        process.start()
+        processes.append(process)
 
-        time.sleep(0.2)
-
-        threads.append(thread)
+        event.wait()
 
     game.listen()
     game.start()
 
-    for thread in threads:
-        thread.join()
+    for process in processes:
+        process.join()
 
     return {player.name: player.score for player in game.players.values()}
 
@@ -112,7 +116,7 @@ def nogrpc_game(playtime: int, speed: int, players: int, seed: int, filepaths: l
         config=config,
         grpc_address=False,
         seed=seed,
-        debug=False,
+        debug=True,
         print_scores=False
     )
 
@@ -138,22 +142,27 @@ class TestGrpc(unittest.TestCase):
     def test_grpc_nogrpc_consistency(self):
         """Test that the outcome of a game is the same for grpc and nogrpc."""
         for seed in 40, 41, 42, 43:
-            nogrpc_scores = nogrpc_game(
-                playtime=2000,
-                speed=10,
-                players=2,
-                seed=seed,
-                filepaths=["examples/ai-magnets.py", "examples/ai-simple.py"]
-            )
+            with self.subTest(msg=f"Seed: {seed}", seed=seed):
+                nogrpc_scores = nogrpc_game(
+                    playtime=2000,
+                    speed=10,
+                    players=2,
+                    seed=seed,
+                    filepaths=["examples/ai-magnets.py", "examples/ai-simple.py"]
+                )
 
-            grpc_scores = grpc_game(
-                playtime=2000,
-                speed=10,
-                players=2,
-                seed=seed,
-                filepaths=["examples/ai-magnets.py", "examples/ai-simple.py"],
-                address="localhost:7778"
-            )
+                grpc_scores = grpc_game(
+                    playtime=2000,
+                    speed=10,
+                    players=2,
+                    seed=seed,
+                    filepaths=["examples/ai-magnets.py", "examples/ai-simple.py"],
+                    address="localhost:7778"
+                )
 
-            self.assertEqual(grpc_scores, nogrpc_scores,
-                             msg=f"Outcome of gRPC and non-gRPC games with seed {seed} is different.")
+                self.assertEqual(grpc_scores, nogrpc_scores,
+                                 msg=f"Outcome of gRPC and non-gRPC games with seed {seed} is different.")
+
+
+if __name__ == "__main__":
+    unittest.main()
