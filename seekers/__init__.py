@@ -136,7 +136,7 @@ class SeekersGame:
                 if new_diff != last_diff:
                     self._logger.info(
                         f"Waiting for players to connect: "
-                        f"{self.config.global_players - len(self.players)}/{self.config.global_players}"
+                        f"{len(self.players)}/{self.config.global_players}"
                     )
                     last_diff = new_diff
 
