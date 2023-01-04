@@ -122,6 +122,8 @@ class SeekersGame:
         if self.grpc:
             self.grpc.stop()
 
+        self.renderer.close()
+
     def listen(self):
         """Block until all players have connected unless global.auto-play is set.
         This may start a gRPC server unless gRPC is disabled."""

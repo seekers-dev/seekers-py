@@ -258,3 +258,7 @@ class GameRenderer:
         raise ValueError(
             f"Config: flags.relative-drawing-to: Invalid reference {self.config.flags_relative_drawing_to!r}."
         )
+
+    @staticmethod
+    def close():
+        pygame.quit()
