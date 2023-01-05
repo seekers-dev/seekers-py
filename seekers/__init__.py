@@ -125,8 +125,7 @@ class SeekersGame:
         self.renderer.close()
 
     def listen(self):
-        """Block until all players have connected unless global.auto-play is set.
-        This may start a gRPC server unless gRPC is disabled."""
+        """Block until all players have connected unless gRPC is disabled. This may start a gRPC server."""
 
         def wait_for_players():
             last_diff = None
@@ -141,9 +140,6 @@ class SeekersGame:
                     last_diff = new_diff
 
                 time.sleep(0.1)
-
-        if self.config.global_auto_play:
-            return
 
         if len(self.players) >= self.config.global_players:
             # already enough players
@@ -173,16 +169,17 @@ class SeekersGame:
         return out
 
     def add_player(self, player: InternalPlayer):
-        """Add a player to the game while it may be running and raise a GameFullError if the game is full.
+        """Add a player to the game while it is not running yet and raise a GameFullError if the game is full.
         This function is used by the gRPC server."""
+
+        assert not self.camps, "Game must not be running to add a player."
+
         if len(self.players) >= self.config.global_players:
             raise GameFullError(
                 f"Game full. Cannot add more players. Max player count is {self.config.global_players}."
             )
 
         self.players |= {player.id: player}
-
-        # TODO: If the game is running already, add a camp and seekers
 
     def print_scores(self):
         for player in sorted(self.players.values(), key=lambda p: p.score, reverse=True):

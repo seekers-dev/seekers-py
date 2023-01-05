@@ -32,7 +32,6 @@ def get_id(obj: str):
 @dataclasses.dataclass
 class Config:
     """Configuration for the Seekers game."""
-    global_auto_play: bool
     global_wait_for_players: bool
     global_playtime: int
     global_fps: int
@@ -78,7 +77,6 @@ class Config:
         cp.read_file(file)
 
         return cls(
-            global_auto_play=cp.getboolean("global", "auto-play"),
             global_wait_for_players=cp.getboolean("global", "wait-for-players"),
             global_playtime=cp.getint("global", "playtime"),
             global_fps=cp.getint("global", "fps"),
