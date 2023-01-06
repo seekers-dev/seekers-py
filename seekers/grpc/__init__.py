@@ -7,6 +7,7 @@ import time
 import logging
 import threading
 
+import seekers
 from seekers import Color
 from seekers.grpc import seekers_proto_types as types
 from seekers.grpc.converters import *
@@ -323,6 +324,7 @@ class GrpcSeekersServicer(pb2_grpc.SeekersServicer):
         self._logger = logging.getLogger(self.__class__.__name__)
         self.seekers_game = seekers_game
         self.game_start_event = game_start_event
+        self.tokens: set[str] = set()
 
     def Join(self, request: JoinRequest, context: grpc.ServicerContext) -> JoinReply:
         # validate requested token
@@ -341,8 +343,13 @@ class GrpcSeekersServicer(pb2_grpc.SeekersServicer):
             i += 1
 
         # create new player
+        new_token = seekers.get_id("Token")
         player = seekers.GrpcClientPlayer(
-            seekers.get_id("Player"), requested_name, 0, {},
+            token=new_token,
+            id=seekers.get_id("Player"),
+            name=requested_name,
+            score=0,
+            seekers={},
             preferred_color=convert_color(request.color)
         )
 
@@ -353,17 +360,17 @@ class GrpcSeekersServicer(pb2_grpc.SeekersServicer):
             context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED, "Game is full.")
             return
 
+        self.tokens.add(new_token)
         self._logger.info(f"Player {player.name!r} joined the game. ({player.id})")
         # return player id
         # token is just the player id, we don't need something more complex for now
-        # TODO: add tokens, this is very unsafe, AIs can impersonate other players
-        return JoinReply(token=player.id, id=player.id, version=_VERSION)
+        return JoinReply(token=player.token, id=player.id, version=_VERSION)
 
     def Properties(self, request: PropertiesRequest, context) -> PropertiesReply:
         return PropertiesReply(entries=self.seekers_game.config.to_properties())
 
     def Status(self, request: StatusRequest, context) -> StatusReply:
-        if request.token not in self.seekers_game.players:
+        if request.token not in self.tokens:
             context.abort(grpc.StatusCode.PERMISSION_DENIED, "Invalid token.")
             return
 
@@ -392,10 +399,12 @@ class GrpcSeekersServicer(pb2_grpc.SeekersServicer):
             return
 
         # check if seeker is owned by player
-        if seeker.owner.id != request.token:
+        # noinspection PyTypeChecker
+        owner: seekers.GrpcClientPlayer = seeker.owner
+        if owner.token != request.token:
             context.abort(
                 grpc.StatusCode.PERMISSION_DENIED,
-                f"Seeker with id {request.seeker_id!r} is not owned by player {request.token!r}."
+                f"Seeker with id {request.seeker_id!r} is not owned by token {request.token!r}."
             )
             return
 

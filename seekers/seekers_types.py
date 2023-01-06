@@ -701,11 +701,12 @@ class LocalPlayer(InternalPlayer):
 class GrpcClientPlayer(InternalPlayer):
     """A player whose decide function is called via a gRPC server and client. See README.md new method."""
 
-    def __init__(self, *args, preferred_color: Color | None = None, **kwargs):
+    def __init__(self, token: str, *args, preferred_color: Color | None = None, **kwargs):
         super().__init__(*args, **kwargs)
         self.was_updated = threading.Event()
         self.num_updates = 0
         self.preferred_color = preferred_color
+        self.token = token
 
     def wait_for_update(self):
         timeout = 5  # seconds
