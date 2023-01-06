@@ -96,13 +96,14 @@ class GrpcSeekersClient:
     The ``decide_function`` is called in a loop and the output of that function is sent to the server."""
 
     def __init__(self, name: str, player_ai: seekers.LocalPlayerAI, address: str = "localhost:7777",
-                 safe_mode: bool = False):
+                 safe_mode: bool = False, careful_mode: bool = False):
         self._logger = logging.getLogger(self.__class__.__name__)
 
         self.player_ai = player_ai
         self.client = GrpcSeekersRawClient(name, address, color=player_ai.preferred_color)
 
-        self.safe_mode = safe_mode
+        self.safe_mode = safe_mode  # reload server config, player objects and seeker objects on every tick
+        self.careful_mode = careful_mode  # raise exceptions on errors that are otherwise ignored
         self.last_gametime = -1
 
         self.player_id: str | None = None
@@ -131,15 +132,29 @@ class GrpcSeekersClient:
             except ServerUnavailableError:
                 self._logger.info("Game ended.")
                 break
+            except GrpcSeekersClientError as e:
+                if self.careful_mode:
+                    raise
+                self._logger.error(f"Error: {e}")
             except grpc._channel._InactiveRpcError as e:
-                if e.code() in {grpc.StatusCode.UNAVAILABLE, grpc.StatusCode.CANCELLED}:
-                    # if cancelled, assume game has ended
+                if not self.careful_mode and e.code() in {grpc.StatusCode.UNAVAILABLE, grpc.StatusCode.CANCELLED}:
+                    # assume game has ended
                     self._logger.info("Game ended.")
                     break
+                elif e.code() in {grpc.StatusCode.UNKNOWN}:
+                    self._logger.error(f"Received status code UNKNOWN: {e}")
                 else:
-                    raise
+                    raise GrpcSeekersClientError("gRPC request resulted in unhandled error.") from e
             except AssertionError as e:
+                if self.careful_mode:
+                    raise
+
                 self._logger.error(f"Assertion not met: {e.args[0]!r}")
+
+                # for safety reset all caches
+                self._server_config = None
+                self._player_reply = None
+                self._last_seekers = {}
 
     def get_server_config(self):
         if self._server_config is None or self.safe_mode:
@@ -173,7 +188,11 @@ class GrpcSeekersClient:
             converted_players[player.id] = converted_player
 
         assert all(s.owner is not None for s in all_seekers.values()), \
-            GrpcSeekersClientError("Invalid Response: Some seekers have no owner.")
+            GrpcSeekersClientError(
+                f"Invalid Response: Some seekers have no owner.\n"
+                f"Players: { {player.id: player.seeker_ids for player in players} }\n"
+                f"Seekers: { {seeker.id: seeker.owner for seeker in all_seekers.values()} }"
+            )
 
         converted_camps = {}
         for camp in camps:
@@ -254,7 +273,7 @@ class GrpcSeekersClient:
 
         try:
             me = converted_players[self.player_id]
-        except IndexError as e:
+        except KeyError as e:
             raise GrpcSeekersClientError("Invalid Response: Own player_id not in PlayerReply.players.") from e
 
         converted_other_seekers = [s for s in converted_seekers.values() if s.owner != me]
