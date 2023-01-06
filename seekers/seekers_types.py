@@ -136,10 +136,12 @@ class Config:
             # field.name-example -> field_name_example
             field_name = key.replace(".", "_").replace("-", "_")
             # convert the value to the correct type
-            type_ = eval(all_kwargs[field_name])  # annotations are strings for python 3.9 compatibility
-            value = type_(value)
+            try:
+                type_ = eval(all_kwargs[field_name])  # annotations are strings for python 3.9 compatibility
+            except KeyError:
+                continue
 
-            kwargs[field_name] = value
+            kwargs[field_name] = type_(value)
 
         kwargs = all_fields_as_none | kwargs
 
