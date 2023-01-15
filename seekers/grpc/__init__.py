@@ -115,7 +115,7 @@ class GrpcSeekersClient:
         self.players: dict[str, seekers.Player] = {}
         self.seekers: dict[str, seekers.Seeker] = {}
         self.camps: dict[str, seekers.Camp] = {}
-        self.goals: list[seekers.Goal] = []
+        self.goals: dict[str, seekers.Goal] = {}
 
         self._last_seekers: dict[str, seekers.Seeker] = {}
 
@@ -190,7 +190,7 @@ class GrpcSeekersClient:
             list(me.seekers.values()),
             converted_other_seekers,
             list(self.seekers.values()),
-            self.goals,
+            list(self.goals.values()),
             converted_other_players,
             me.camp,
             list(self.camps.values()),
@@ -322,7 +322,7 @@ class GrpcSeekersClient:
             GrpcSeekersClientError("Invalid Response: Some players have no camp.")
 
         # 4. convert goals
-        self.goals = [convert_goal(g, self.camps, config) for g in status_reply.goals]
+        self.goals |= {g.super.id: convert_goal(g, self.camps, config) for g in status_reply.goals}
 
 
 class GrpcSeekersServicer(pb2_grpc.SeekersServicer):
