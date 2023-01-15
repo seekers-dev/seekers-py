@@ -105,7 +105,6 @@ class GrpcSeekersClient:
         self.player_ai = player_ai
         self.client = GrpcSeekersRawClient(name, address, color=player_ai.preferred_color)
 
-        self.safe_mode = safe_mode  # reload server config, player objects and seeker objects on every tick
         self.careful_mode = careful_mode  # raise exceptions on errors that are otherwise ignored
         self.last_gametime = -1
 
@@ -166,7 +165,7 @@ class GrpcSeekersClient:
                 self._last_seekers = {}
 
     def get_config(self):
-        if self._server_config is None or self.safe_mode:
+        if self._server_config is None:
             self._server_config = seekers.Config.from_properties(self.client.server_properties())
 
         return self._server_config

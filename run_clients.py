@@ -17,7 +17,7 @@ def run_ai(filepath: str, name: str, args: argparse.Namespace):
     ai = seekers.LocalPlayerAI.from_file(filepath)
 
     try:
-        seekers.grpc.GrpcSeekersClient(name, ai, args.address, safe_mode=args.safe).run()
+        seekers.grpc.GrpcSeekersClient(name, ai, args.address).run()
     except seekers.grpc.ServerUnavailableError:
         logging.error(f"Server at {args.address!r} unavailable. "
                       f"Check that it's running and that the address is correct.")
@@ -31,9 +31,6 @@ def main():
                         help="Address of the server. (default: localhost:7777)")
     parser.add_argument("-loglevel", "-log", "-l", type=str, default="INFO",
                         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"])
-    parser.add_argument("--safe", action="store_true", help="Enable safe mode for the gRPC clients. This will refetch "
-                                                            "the config and rebuild player and seeker objects every "
-                                                            "tick.")
     parser.add_argument("--careful", action="store_true", help="Enable careful mode for the gRPC clients. This will "
                                                                "raise an exception and stop the client when errors "
                                                                "occur that otherwise would be ignored.")
