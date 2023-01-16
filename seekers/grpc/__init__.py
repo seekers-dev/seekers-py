@@ -204,7 +204,7 @@ class GrpcSeekersClient:
             if status_reply.passed_playtime != self.last_gametime:
                 break
 
-            if self.safe_mode and time.perf_counter() - t > 4:
+            if self.careful_mode and time.perf_counter() - t > 4:
                 raise GrpcSeekersClientError(f"Timeout while waiting for game tick. "
                                              f"Server's clock did not advance. (t={status_reply.passed_playtime}).")
 
