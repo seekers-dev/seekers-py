@@ -58,7 +58,6 @@ def goal_scored(player: InternalPlayer, goal_index: int, goals: list[Goal], anim
     player.score += 1
 
     goal = goals[goal_index]
-    goal.id_ = get_id("Goal")
 
     animations.append(ScoreAnimation(goal.position, player.color, goal.radius))
 
