@@ -12,6 +12,7 @@ from seekers import *
 def main():
     parser = argparse.ArgumentParser(description="Run python seekers AIs.")
     parser.add_argument("--nogrpc", action="store_true", help="Don't host a gRPC server.")
+    parser.add_argument("--nokill", action="store_true", help="Don't kill the process after the game is over.")
     parser.add_argument("--debug", action="store_true", help="Enable debug mode. This will enable debug drawing.")
     parser.add_argument("-address", "-a", type=str, default="localhost:7777",
                         help="Address of the server. (default: localhost:7777)")
@@ -33,7 +34,8 @@ def main():
         config=Config.from_filepath(args.config),
         grpc_address=address,
         seed=args.seed,
-        debug=args.debug
+        debug=args.debug,
+        dont_kill=args.nokill
     )
     seekers_game.listen()
     seekers_game.start()

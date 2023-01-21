@@ -22,13 +22,14 @@ class SeekersGame:
 
     def __init__(self, local_ai_locations: typing.Iterable[str], config: Config,
                  grpc_address: typing.Literal[False] | str = "localhost:7777", seed: float = 42,
-                 debug: bool = True, print_scores: bool = True):
+                 debug: bool = True, print_scores: bool = True, dont_kill: bool = False):
         self._logger = logging.getLogger("SeekersGame")
 
         self.config = config
         self.debug = debug
         self.seed = seed
         self.do_print_scores = print_scores
+        self.dont_kill = dont_kill
 
         if grpc_address:
             from .grpc import GrpcSeekersServer
@@ -96,6 +97,14 @@ class SeekersGame:
 
             # perform game logic
             for _ in range(self.config.updates_per_frame):
+                # end game if tournament_length has been reached
+                if self.config.global_playtime and self.ticks >= self.config.global_playtime:
+                    if self.dont_kill:
+                        continue
+                    else:
+                        running = False
+                        break
+
                 for player in self.players.values():
                     player.poll_ai(self.config.global_wait_for_players, self.world,
                                    self.goals, self.players, self.get_time, self.debug)
@@ -103,11 +112,6 @@ class SeekersGame:
                 game_logic.tick(self.players.values(), self.camps, self.goals, self.animations, self.world)
 
                 self.ticks += 1
-
-                # end game if tournament_length has been reached
-                if self.config.global_playtime and self.ticks >= self.config.global_playtime:
-                    running = False
-                    break
 
             # draw graphics
             self.renderer.draw(self.players.values(), self.camps, self.goals, self.animations, self.clock)
