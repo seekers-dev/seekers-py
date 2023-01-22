@@ -177,7 +177,8 @@ class SeekersGame:
         """Add a player to the game while it is not running yet and raise a GameFullError if the game is full.
         This function is used by the gRPC server."""
 
-        assert not self.camps, "Game must not be running to add a player."
+        if self.camps:
+            raise GameFullError("Game must not be running to add a player.")
 
         if len(self.players) >= self.config.global_players:
             raise GameFullError(
