@@ -434,8 +434,6 @@ class GrpcSeekersServer:
 
     def __init__(self, seekers_game: seekers.SeekersGame, address: str = "localhost:7777"):
         self._logger = logging.getLogger(self.__class__.__name__)
-        self._logger.info(f"Starting server on {address=}")
-
         self.game_start_event = threading.Event()
 
         self.server = grpc.server(ThreadPoolExecutor())
@@ -443,11 +441,13 @@ class GrpcSeekersServer:
         self.server.add_insecure_port(address)
 
         self._is_running = False
+        self._address = address
 
     def start(self):
         if self._is_running:
             return
 
+        self._logger.info(f"Starting server on {self._address!r}")
         self.server.start()
         self._is_running = True
 

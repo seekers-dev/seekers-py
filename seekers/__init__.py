@@ -134,6 +134,9 @@ class SeekersGame:
         def wait_for_players():
             last_diff = None
             while len(self.players) < self.config.global_players:
+                # start can be called multiple times
+                self.grpc.start()
+
                 new_diff = self.config.global_players - len(self.players)
 
                 if new_diff != last_diff:
@@ -150,8 +153,6 @@ class SeekersGame:
             return
 
         if self.grpc:
-            self.grpc.start()
-
             wait_for_players()
 
     @staticmethod
