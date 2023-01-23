@@ -183,16 +183,19 @@ class Vector:
     def __neg__(self):
         return self * (-1)
 
-    def __mul__(self, factor):
+    def __mul__(self, factor: Vector | float):
+        if isinstance(factor, Vector):
+            return Vector(self.x * factor.x, self.y * factor.y)
+
         return Vector(self.x * factor, self.y * factor)
 
-    def __rmul__(self, other):
+    def __rmul__(self, other: Vector | float):
         return self * other
 
-    def __truediv__(self, divisor):
+    def __truediv__(self, divisor: Vector | float):
         return self * (1 / divisor)
 
-    def __rtruediv__(self, other):
+    def __rtruediv__(self, other: Vector | float):
         if other == 1:
             return Vector(1 / self.x, 1 / self.y)
 
@@ -737,7 +740,7 @@ class World:
         pos.x -= math.floor(pos.x / self.width) * self.width
         pos.y -= math.floor(pos.y / self.height) * self.height
 
-    def normalized_position(self,pos: Vector):
+    def normalized_position(self, pos: Vector):
         tmp = pos
         self.normalize_position(tmp)
         return tmp
