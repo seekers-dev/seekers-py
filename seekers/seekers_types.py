@@ -163,6 +163,9 @@ class Vector:
             math.sin(angle) * self.x + math.cos(angle) * self.y,
         )
 
+    def rotated90(self) -> "Vector":
+        return Vector(-self.y, self.x)
+
     def __iter__(self):
         return iter((self.x, self.y))
 
