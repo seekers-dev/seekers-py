@@ -183,16 +183,22 @@ class Vector:
     def __neg__(self):
         return self * (-1)
 
-    def __mul__(self, factor):
-        return Vector(self.x * factor, self.y * factor)
+    def __mul__(self, factor: Vector | float):
+        if isinstance(factor, Vector):
+            return Vector(self.x * factor.x, self.y * factor.y)
 
-    def __rmul__(self, other):
+        if isinstance(factor, float):
+            return Vector(self.x * factor, self.y * factor)
+
+        raise TypeError
+
+    def __rmul__(self, other: Vector | float):
         return self * other
 
-    def __truediv__(self, divisor):
+    def __truediv__(self, divisor: Vector | float):
         return self * (1 / divisor)
 
-    def __rtruediv__(self, other):
+    def __rtruediv__(self, other: Vector | float):
         if other == 1:
             return Vector(1 / self.x, 1 / self.y)
 
