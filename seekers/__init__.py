@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from .hash_color import Color
+from .colors import Color
 from .seekers_types import *
-from . import game_logic, draw, hash_color
+from . import game_logic, draw, colors
 
 import logging
 import time
@@ -199,10 +199,10 @@ class SeekersGame:
         old_colors = [p.color for p in self.players.values() if p.color is not None]
 
         preferred = (
-            hash_color.string_hash_color(player.name) if player.preferred_color is None else player.preferred_color
+            colors.string_hash_color(player.name) if player.preferred_color is None else player.preferred_color
         )
 
-        return hash_color.pick_new(old_colors, preferred, threshold=self.config.global_color_threshold)
+        return colors.pick_new(old_colors, preferred, threshold=self.config.global_color_threshold)
 
     @property
     def seekers(self) -> collections.ChainMap[str, InternalSeeker]:

@@ -13,7 +13,7 @@ import seekers
 from seekers import Color
 from seekers.grpc import seekers_proto_types as types
 from seekers.grpc.converters import *
-from seekers.hash_color import string_hash_color
+from seekers.colors import string_hash_color
 
 _VERSION = "1"
 

@@ -1,7 +1,7 @@
 import pygame
 from typing import Iterable, Callable, Collection, Sequence
 
-from .hash_color import interpolate_color
+from .colors import interpolate_color
 from .seekers_types import *
 
 
