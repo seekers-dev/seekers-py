@@ -237,29 +237,36 @@ class Vector:
 
 
 class Physical:
-    def __init__(self, id_: str, position: Vector, velocity: Vector, mass: float, radius: float, config: Config):
+    def __init__(self, id_: str, position: Vector, velocity: Vector,
+                 mass: float, radius: float, friction: float, max_speed: float,
+                 experimental_friction: bool = False):
         self.id = id_
+
         self.position = position
         self.velocity = velocity
         self.acceleration = Vector(0, 0)
+
         self.mass = mass
         self.radius = radius
-        self.config = config
+
+        self.friction = friction
+        self.max_speed = max_speed
+        self.experimental_friction = experimental_friction
 
     def update_acceleration(self, world: "World") -> Vector:
         ...
 
     def thrust(self) -> float:
-        return self.config.physical_max_speed * self.config.physical_friction
+        return self.max_speed * self.friction
 
     def move(self, world: "World"):
-        if self.config.flags_experimental_friction:
+        if self.experimental_friction:
             vel_fact = (
                 math.sqrt(
-                    self.velocity.length() ** 2 - 2 * self.config.physical_friction * self.velocity.length()
+                    self.velocity.length() ** 2 - 2 * self.friction * self.velocity.length()
                 ) / self.velocity.length()
 
-                if (self.velocity.length() ** 2 - 2 * self.config.physical_friction * self.velocity.length()) > 0
+                if (self.velocity.length() ** 2 - 2 * self.friction * self.velocity.length()) > 0
                 else 0
             )
 
@@ -267,7 +274,7 @@ class Physical:
                 self.velocity.length() ** 2 + 2 * self.thrust()
             ) - self.velocity.length()
         else:
-            vel_fact = 1 - self.config.physical_friction
+            vel_fact = 1 - self.friction
             acc_fact = self.thrust()
 
         # friction
@@ -308,32 +315,50 @@ class InternalPhysical(Physical):
 
 
 class Goal(Physical):
-    def __init__(self, id_: str, position: Vector, velocity: Vector, mass: float, radius: float, config: Config):
-        super().__init__(id_, position, velocity, mass, radius, config)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.owner: "Player | None" = None
         self.owned_for: int = 0
 
 
 class InternalGoal(InternalPhysical, Goal):
-    def __init__(self, id_: str, position: Vector, velocity: Vector, config: Config):
-        super().__init__(id_, position, velocity, config.goal_mass, config.goal_radius, config)
+    def __init__(self, scoring_time: float, *args, **kwargs):
+        Goal.__init__(self, *args, **kwargs)
+
         self.owner: "Player | None" = None
         self.owned_for: int = 0
 
-    def camp_tick(self, camp: "Camp"):
+        self.config_scoring_time = scoring_time
+
+    @classmethod
+    def from_config(cls, id_: str, position: Vector, config: Config) -> InternalGoal:
+        return cls(
+            config.goal_scoring_time,
+            id_,
+            position,
+            Vector(0, 0),
+            config.goal_mass,
+            config.goal_radius,
+            config.physical_friction,
+            config.physical_max_speed,
+            config.flags_experimental_friction
+        )
+
+    def camp_tick(self, camp: "Camp") -> bool:
+        """Update the goal and return True if it has been captured."""
         if camp.contains(self.position):
             if self.owner == camp.owner:
                 self.owned_for += 1
             else:
                 self.owned_for = 0
                 self.owner = camp.owner
-            return self.owned_for >= self.config.goal_scoring_time
+            return self.owned_for >= self.config_scoring_time
         else:
             return False
 
     def to_ai_input(self, players: dict[str, Player]) -> Goal:
-        # TODO: config object needs to be copied
-        g = Goal(self.id, self.position.copy(), self.velocity.copy(), self.mass, self.radius, self.config)
+        g = Goal(self.id, self.position.copy(), self.velocity.copy(), self.mass, self.radius,
+                 self.friction, self.max_speed, self.experimental_friction)
         g.owner = None if self.owner is None else players[self.owner.id]
         g.owned_for = self.owned_for
         return g
@@ -368,9 +393,8 @@ class Magnet:
 
 
 class Seeker(Physical):
-    def __init__(self, id_: str, position: Vector, velocity: Vector, mass: float, radius: float, owner: "Player",
-                 config: Config):
-        super().__init__(id_, position, velocity, mass, radius, config)
+    def __init__(self, owner: Player, *args, **kwargs):
+        Physical.__init__(self, *args, **kwargs)
         self.target = self.position
         self.disabled_counter = 0
         self.magnet = Magnet()
@@ -407,15 +431,33 @@ class Seeker(Physical):
 
 
 class InternalSeeker(InternalPhysical, Seeker):
-    def __init__(self, id_: str, position: Vector, velocity: Vector, owner: "InternalPlayer", config: Config):
-        super().__init__(id_, position, velocity, config.seeker_mass, config.seeker_radius, owner, config)
+    def __init__(self, owner: InternalPlayer, disabled_time: float, magnet_slowdown: float, *args, **kwargs):
+        Seeker.__init__(self, owner, *args, **kwargs)
         self.target = self.position.copy()
         self.disabled_counter = 0
         self.magnet = Magnet()
-        self.owner = owner
+
+        self.disabled_time = disabled_time
+        self.magnet_slowdown = magnet_slowdown
+
+    @classmethod
+    def from_config(cls, owner: InternalPlayer, id_: str, position: Vector, config: Config):
+        return cls(
+            owner,
+            config.seeker_disabled_time,
+            config.seeker_magnet_slowdown,
+            id_,
+            position,
+            Vector(),
+            config.seeker_mass,
+            config.seeker_radius,
+            config.physical_friction,
+            config.physical_max_speed,
+            config.flags_experimental_friction
+        )
 
     def disable(self):
-        self.disabled_counter = self.config.seeker_disabled_time
+        self.disabled_counter = self.disabled_time
 
     def update_acceleration(self, world):
         if self.disabled_counter == 0:
@@ -425,7 +467,7 @@ class InternalSeeker(InternalPhysical, Seeker):
             self.acceleration = Vector(0, 0)
 
     def thrust(self) -> float:
-        b = self.config.seeker_magnet_slowdown if self.magnet.is_on() else 1
+        b = self.magnet_slowdown if self.magnet.is_on() else 1
         return InternalPhysical.thrust(self) * b
 
     def magnet_effective(self):
@@ -444,7 +486,8 @@ class InternalSeeker(InternalPhysical, Seeker):
         InternalPhysical.collision(self, other, world)
 
     def to_ai_input(self, owner: "Player") -> Seeker:
-        s = Seeker(self.id, self.position.copy(), self.velocity.copy(), self.mass, self.radius, owner, self.config)
+        s = Seeker(owner, self.id, self.position.copy(), self.velocity.copy(), self.mass, self.radius,
+                   self.friction, self.max_speed, self.experimental_friction)
         s.disabled_counter = self.disabled_counter
         s.target = self.target.copy()
 

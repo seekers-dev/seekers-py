@@ -59,13 +59,13 @@ class SeekersGame:
         random.seed(self.seed)
 
         # initialize goals
-        self.goals = [InternalGoal(get_id("Goal"), self.world.random_position(), Vector(), self.config) for _ in
+        self.goals = [InternalGoal.from_config(get_id("Goal"), self.world.random_position(), self.config) for _ in
                       range(self.config.global_goals)]
 
         # initialize players
         for p in self.players.values():
             p.seekers = {
-                (id_ := get_id("Seeker")): InternalSeeker(id_, self.world.random_position(), Vector(), p, self.config)
+                (id_ := get_id("Seeker")): InternalSeeker.from_config(p, id_, self.world.random_position(), self.config)
                 for _ in range(self.config.global_seekers)
             }
             p.color = self.get_new_player_color(p)
