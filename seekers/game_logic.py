@@ -15,10 +15,10 @@ def tick(players: typing.Iterable[InternalPlayer], camps: list[Camp], goals: lis
 
     # compute magnetic forces and move goals
     for g in goals:
-        force = Vector(0, 0)
+        g.acceleration = Vector(0, 0)
         for s in seekers:
-            force += s.magnetic_force(world, g.position)
-        g.acceleration = force
+            g.acceleration += s.magnetic_force(world, g.position)
+
         g.move(world)
 
     # handle collisions

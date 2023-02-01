@@ -1,6 +1,7 @@
 """This file consist of a series of functions that convert between the gRPC types and the internal types."""
 
 try:
+    # noinspection PyPackageRequirements
     from google._upb._message import MessageMeta
 except ImportError:
     # google package is not explicitly required, it may not be installed
@@ -43,7 +44,7 @@ def convert_seeker(seeker: types.SeekerStatus, owner: seekers.Player, config: se
         mass=config.seeker_mass,
         radius=config.seeker_radius,
         friction=config.physical_friction,
-        max_speed=config.physical_max_speed,
+        base_thrust=config.seeker_thrust,
         experimental_friction=config.flags_experimental_friction
 
     )
@@ -82,7 +83,7 @@ def convert_goal(goal: types.GoalStatus, camps: dict[str, seekers.Camp], config:
         mass=config.goal_mass,
         radius=config.goal_radius,
         friction=config.physical_friction,
-        max_speed=config.physical_max_speed,
+        base_thrust=config.seeker_thrust,
         experimental_friction=config.flags_experimental_friction
     )
 

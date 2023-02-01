@@ -47,9 +47,9 @@ class Config:
     camp_width: int
     camp_height: int
 
-    physical_max_speed: float
     physical_friction: float
 
+    seeker_thrust: float
     seeker_magnet_slowdown: float
     seeker_disabled_time: int
     seeker_radius: float
@@ -92,9 +92,9 @@ class Config:
             camp_width=cp.getint("camp", "width"),
             camp_height=cp.getint("camp", "height"),
 
-            physical_max_speed=cp.getfloat("physical", "max-speed"),
             physical_friction=cp.getfloat("physical", "friction"),
 
+            seeker_thrust=cp.getfloat("seeker", "thrust"),
             seeker_magnet_slowdown=cp.getfloat("seeker", "magnet-slowdown"),
             seeker_disabled_time=cp.getint("seeker", "disabled-time"),
             seeker_radius=cp.getfloat("seeker", "radius"),
@@ -238,7 +238,7 @@ class Vector:
 
 class Physical:
     def __init__(self, id_: str, position: Vector, velocity: Vector,
-                 mass: float, radius: float, friction: float, max_speed: float,
+                 mass: float, radius: float, friction: float, base_thrust: float,
                  experimental_friction: bool = False):
         self.id = id_
 
@@ -250,14 +250,16 @@ class Physical:
         self.radius = radius
 
         self.friction = friction
-        self.max_speed = max_speed
+        self.base_thrust = base_thrust
         self.experimental_friction = experimental_friction
 
-    def update_acceleration(self, world: "World") -> Vector:
-        ...
+    def update_acceleration(self, world: "World"):
+        """Update self.acceleration. Ideally, that is a unit vector. This is supposed to be overridden by subclasses."""
+        pass
 
     def thrust(self) -> float:
-        return self.max_speed * self.friction
+        """Return the thrust, i.e. length of applied acceleration. This is supposed to be overridden by subclasses."""
+        return 1
 
     def move(self, world: "World"):
         if self.experimental_friction:
@@ -340,7 +342,7 @@ class InternalGoal(InternalPhysical, Goal):
             config.goal_mass,
             config.goal_radius,
             config.physical_friction,
-            config.physical_max_speed,
+            config.seeker_thrust,
             config.flags_experimental_friction
         )
 
@@ -358,7 +360,7 @@ class InternalGoal(InternalPhysical, Goal):
 
     def to_ai_input(self, players: dict[str, Player]) -> Goal:
         g = Goal(self.id, self.position.copy(), self.velocity.copy(), self.mass, self.radius,
-                 self.friction, self.max_speed, self.experimental_friction)
+                 self.friction, self.base_thrust, self.experimental_friction)
         g.owner = None if self.owner is None else players[self.owner.id]
         g.owned_for = self.owned_for
         return g
@@ -407,14 +409,14 @@ class Seeker(Physical):
     def disabled(self):
         return self.is_disabled
 
-    def magnetic_force(self, world, pos: Vector) -> Vector:
+    def magnetic_force(self, world: World, pos: Vector) -> Vector:
         def bump(r) -> float:
             return math.exp(1 / (r ** 2 - 1)) if r < 1 else 0
 
         r = world.torus_distance(self.position, pos) / world.diameter()
         d = world.torus_direction(self.position, pos)
 
-        return Vector(0, 0) if self.is_disabled else - d * (self.magnet.strength * bump(r * 10))
+        return Vector(0, 0) if self.is_disabled else - d * (self.magnet.strength * bump(r * 10)) * self.base_thrust
 
     # methods below are left in for compatibility
     def set_magnet_repulsive(self):
@@ -452,28 +454,29 @@ class InternalSeeker(InternalPhysical, Seeker):
             config.seeker_mass,
             config.seeker_radius,
             config.physical_friction,
-            config.physical_max_speed,
+            config.seeker_thrust,
             config.flags_experimental_friction
         )
 
     def disable(self):
         self.disabled_counter = self.disabled_time
 
-    def update_acceleration(self, world):
+    def update_acceleration(self, world: World):
         if self.disabled_counter == 0:
-            a = world.torus_direction(self.position, self.target)
-            self.acceleration = a
+            self.acceleration = world.torus_direction(self.position, self.target)
         else:
             self.acceleration = Vector(0, 0)
 
     def thrust(self) -> float:
-        b = self.magnet_slowdown if self.magnet.is_on() else 1
-        return InternalPhysical.thrust(self) * b
+        magnet_slowdown_factor = self.magnet_slowdown if self.magnet.is_on() else 1
+
+        return self.base_thrust * magnet_slowdown_factor
 
     def magnet_effective(self):
+        """Return whether the magnet is on and the seeker is not disabled."""
         return self.magnet.is_on() and not self.is_disabled
 
-    def collision(self, other: "InternalSeeker", world):
+    def collision(self, other: "InternalSeeker", world: World):
         if self.magnet_effective():
             self.disable()
         if other.magnet_effective():
@@ -487,7 +490,7 @@ class InternalSeeker(InternalPhysical, Seeker):
 
     def to_ai_input(self, owner: "Player") -> Seeker:
         s = Seeker(owner, self.id, self.position.copy(), self.velocity.copy(), self.mass, self.radius,
-                   self.friction, self.max_speed, self.experimental_friction)
+                   self.friction, self.base_thrust, self.experimental_friction)
         s.disabled_counter = self.disabled_counter
         s.target = self.target.copy()
 
