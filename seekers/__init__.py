@@ -81,9 +81,6 @@ class SeekersGame:
 
         self.mainloop()
 
-    def get_time(self):
-        return self.ticks
-
     def mainloop(self):
         """Start the game. Block until the game is over."""
         random.seed(self.seed)
@@ -106,8 +103,7 @@ class SeekersGame:
                         break
 
                 for player in self.players.values():
-                    player.poll_ai(self.config.global_wait_for_players, self.world,
-                                   self.goals, self.players, self.get_time, self.debug)
+                    player.poll_ai(self.world, self.goals, self.players, self.ticks, self.debug)
 
                 game_logic.tick(self.players.values(), self.camps, self.goals, self.animations, self.world)
 

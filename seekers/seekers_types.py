@@ -8,9 +8,7 @@ import math
 import dataclasses
 import abc
 import random
-import traceback
 import typing
-from multiprocessing.pool import ThreadPool
 from collections import defaultdict
 
 from . import Color
@@ -32,7 +30,6 @@ def get_id(obj: str):
 @dataclasses.dataclass
 class Config:
     """Configuration for the Seekers game."""
-    global_wait_for_players: bool
     global_playtime: int
     global_fps: int
     global_speed: int
@@ -77,7 +74,6 @@ class Config:
         cp.read_file(file)
 
         return cls(
-            global_wait_for_players=cp.getboolean("global", "wait-for-players"),
             global_playtime=cp.getint("global", "playtime"),
             global_fps=cp.getint("global", "fps"),
             global_speed=cp.getint("global", "speed"),
@@ -535,8 +531,8 @@ class InternalPlayer(Player):
         return player
 
     @abc.abstractmethod
-    def poll_ai(self, wait: bool, world: "World", goals: list[InternalGoal],
-                players: dict[str, "InternalPlayer"], time: typing.Callable[[], float], debug: bool):
+    def poll_ai(self, world: "World", goals: list[InternalGoal], players: dict[str, "InternalPlayer"], time: float,
+                debug: bool):
         ...
 
 
@@ -615,9 +611,6 @@ class LocalPlayer(InternalPlayer):
     """A player whose decide function is called directly. See README.md old method."""
     ai: LocalPlayerAI
 
-    _thread_pool: ThreadPool = dataclasses.field(init=False, default_factory=lambda: ThreadPool(1))
-    _waiting: int = dataclasses.field(init=False, default=0)
-
     @property
     def preferred_color(self) -> Color | None:
         return self.ai.preferred_color
@@ -695,43 +688,12 @@ class LocalPlayer(InternalPlayer):
 
             own_seeker.magnet.strength = int(ai_seeker.magnet.strength)
 
-    def _update_ai_action(self, world: "World", goals: list[InternalGoal], players: dict[str, "InternalPlayer"],
-                          time: typing.Callable[[], float], debug: bool):
-        ai_input = self.get_ai_input(world, goals, players, time())
+    def poll_ai(self, world: "World", goals: list[InternalGoal], players: dict[str, "InternalPlayer"], time: float,
+                debug: bool):
+        ai_input = self.get_ai_input(world, goals, players, time)
 
         ai_output = self._call_ai(ai_input, debug)
-
         self._process_ai_output(ai_output)
-
-    def poll_ai(self, wait: bool, world: "World", goals: list[InternalGoal],
-                players: dict[str, "InternalPlayer"], time_: typing.Callable[[], float], debug: bool):
-        if wait:
-            self._update_ai_action(world, goals, players, time_, debug)
-
-        else:
-            if self._waiting > 2:
-                # no more than two items in the queue
-                return
-
-            def error_callback(e):
-                p = traceback.format_exception(e)
-                logging.getLogger(self.name).error("".join(p))
-
-            def run(*args, **kwargs):
-                self._waiting -= 1
-                # We have time as a function because in the time
-                # leading up to this being called, game time may
-                # have passed.
-                # The seekers, goals and players objects stay the
-                # same (no copies), so we do not need a function.
-                self._update_ai_action(*args, **kwargs)
-
-            self._waiting += 1
-            self._thread_pool.apply_async(
-                run,
-                args=(world, goals, players, time_, debug),
-                error_callback=error_callback
-            )
 
     @classmethod
     def from_file(cls, filepath: str) -> "LocalPlayer":
@@ -744,10 +706,6 @@ class LocalPlayer(InternalPlayer):
             seekers={},
             ai=LocalPlayerAI.from_file(filepath)
         )
-
-    def __del__(self):
-        # to prevent exception when the program closes
-        self._thread_pool.terminate()
 
 
 class GrpcClientPlayer(InternalPlayer):
@@ -772,10 +730,9 @@ class GrpcClientPlayer(InternalPlayer):
 
         self.was_updated.clear()
 
-    def poll_ai(self, wait: bool, world: "World", goals: list[InternalGoal],
-                players: dict[str, "InternalPlayer"], time: typing.Callable[[], float], debug: bool):
-        if wait:
-            self.wait_for_update()
+    def poll_ai(self, world: "World", goals: list[InternalGoal], players: dict[str, "InternalPlayer"], time: float,
+                debug: bool):
+        self.wait_for_update()
 
 
 class World:
