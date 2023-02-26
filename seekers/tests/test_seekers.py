@@ -2,7 +2,7 @@ import os
 import threading
 import unittest
 
-from seekers import SeekersGame, Config, LocalPlayerAI
+from seekers import SeekersGame, Config, LocalPlayerAi
 from seekers.grpc import GrpcSeekersClient
 
 
@@ -55,7 +55,7 @@ def start_grpc_client(filepath: str, address: str, joined_event: threading.Event
 
     client = GrpcSeekersClient(
         name=name,
-        player_ai=LocalPlayerAI.from_file(filepath),
+        player_ai=LocalPlayerAi.from_file(filepath),
         address=address
     )
     client.join()

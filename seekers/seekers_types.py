@@ -495,7 +495,7 @@ class InternalSeeker(InternalPhysical, Seeker):
         return s
 
 
-AIInput = tuple[
+AiInput = tuple[
     list[Seeker], list[Seeker], list[Seeker], list[Goal], list["Player"], "Camp", list["Camp"], "World", float
 ]
 DecideCallable = typing.Callable[
@@ -542,7 +542,7 @@ class InvalidAiOutputError(Exception): ...
 
 
 @dataclasses.dataclass
-class LocalPlayerAI:
+class LocalPlayerAi:
     filepath: str
     timestamp: float
     decide_function: DecideCallable
@@ -593,7 +593,7 @@ class LocalPlayerAI:
             raise InvalidAiOutputError(f"Error while loading AI {filepath!r}. Dummy AIs are not supported.") from e
 
     @classmethod
-    def from_file(cls, filepath: str) -> "LocalPlayerAI":
+    def from_file(cls, filepath: str) -> "LocalPlayerAi":
         decide_func, preferred_color = cls.load_module(filepath)
 
         return cls(filepath, os.path.getctime(filepath), decide_func, preferred_color)
@@ -601,7 +601,7 @@ class LocalPlayerAI:
     def update(self):
         new_timestamp = os.path.getctime(self.filepath)
         if new_timestamp > self.timestamp:
-            logger = logging.getLogger("AIReloader")
+            logger = logging.getLogger("AiReloader")
             logger.debug(f"Reloading AI {self.filepath!r}.")
 
             self.decide_function, self.preferred_color = self.load_module(self.filepath)
@@ -611,7 +611,7 @@ class LocalPlayerAI:
 @dataclasses.dataclass
 class LocalPlayer(InternalPlayer):
     """A player whose decide function is called directly. See README.md old method."""
-    ai: LocalPlayerAI
+    ai: LocalPlayerAi
 
     @property
     def preferred_color(self) -> Color | None:
@@ -622,7 +622,7 @@ class LocalPlayer(InternalPlayer):
                      _goals: list[InternalGoal],
                      _players: dict[str, "InternalPlayer"],
                      time: float
-                     ) -> AIInput:
+                     ) -> AiInput:
         players = {p.id: p.to_ai_input() for p in _players.values()}
         me = players[self.id]
         my_camp = me.camp
@@ -635,7 +635,7 @@ class LocalPlayer(InternalPlayer):
 
         return my_seekers, other_seekers, all_seekers, goals, list(players.values()), my_camp, camps, world, time
 
-    def call_ai(self, ai_input: AIInput, debug: bool) -> typing.Any:
+    def call_ai(self, ai_input: AiInput, debug: bool) -> typing.Any:
         def call():
             new_debug_drawings = []
 
@@ -709,7 +709,7 @@ class LocalPlayer(InternalPlayer):
             name=name,
             score=0,
             seekers={},
-            ai=LocalPlayerAI.from_file(filepath)
+            ai=LocalPlayerAi.from_file(filepath)
         )
 
 

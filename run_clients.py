@@ -14,7 +14,7 @@ def run_ai(filepath: str, name: str, args: argparse.Namespace):
         stream=sys.stdout, force=True
     )
 
-    ai = seekers.LocalPlayerAI.from_file(filepath)
+    ai = seekers.LocalPlayerAi.from_file(filepath)
 
     try:
         seekers.grpc.GrpcSeekersClient(name, ai, args.address).run()

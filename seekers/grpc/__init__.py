@@ -98,7 +98,7 @@ class GrpcSeekersClient:
     """A client for a Seekers gRPC game. It contains a ``GrpcSeekersRawClient`` and implements a mainloop.
     The ``decide_function`` is called in a loop and the output of that function is sent to the server."""
 
-    def __init__(self, name: str, player_ai: seekers.LocalPlayerAI, address: str = "localhost:7777",
+    def __init__(self, name: str, player_ai: seekers.LocalPlayerAi, address: str = "localhost:7777",
                  safe_mode: bool = False, careful_mode: bool = False):
         self._logger = logging.getLogger(self.__class__.__name__)
 
@@ -170,7 +170,7 @@ class GrpcSeekersClient:
 
         return self._server_config
 
-    def get_ai_input(self) -> seekers.AIInput:
+    def get_ai_input(self) -> seekers.AiInput:
         config = self.get_config()
 
         try:
