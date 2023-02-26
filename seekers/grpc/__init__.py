@@ -438,7 +438,6 @@ class GrpcSeekersServer:
 
         self.server = grpc.server(ThreadPoolExecutor())
         pb2_grpc.add_SeekersServicer_to_server(GrpcSeekersServicer(seekers_game, self.game_start_event), self.server)
-        self.server.add_insecure_port(address)
 
         self._is_running = False
         self._address = address
@@ -448,6 +447,7 @@ class GrpcSeekersServer:
             return
 
         self._logger.info(f"Starting server on {self._address!r}")
+        self.server.add_insecure_port(self._address)
         self.server.start()
         self._is_running = True
 
