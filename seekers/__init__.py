@@ -62,13 +62,13 @@ class SeekersGame:
         random.seed(self.seed)
 
         # initialize goals
-        self.goals = [InternalGoal.from_config(get_id("Goal"), self.world.random_position(), self.config) for _ in
+        self.goals = [Goal.from_config(get_id("Goal"), self.world.random_position(), self.config) for _ in
                       range(self.config.global_goals)]
 
         # initialize players
         for p in self.players.values():
             p.seekers = {
-                (id_ := get_id("Seeker")): InternalSeeker.from_config(p, id_, self.world.random_position(), self.config)
+                (id_ := get_id("Seeker")): Seeker.from_config(p, id_, self.world.random_position(), self.config)
                 for _ in range(self.config.global_seekers)
             }
             p.color = self.get_new_player_color(p)
@@ -156,9 +156,9 @@ class SeekersGame:
             wait_for_players()
 
     @staticmethod
-    def load_local_players(ai_locations: typing.Iterable[str]) -> dict[str, InternalPlayer]:
+    def load_local_players(ai_locations: typing.Iterable[str]) -> dict[str, Player]:
         """Return the players found in the given directories or files."""
-        out: dict[str, InternalPlayer] = {}
+        out: dict[str, Player] = {}
 
         for location in ai_locations:
             if os.path.isdir(location):
@@ -173,7 +173,7 @@ class SeekersGame:
 
         return out
 
-    def add_player(self, player: InternalPlayer):
+    def add_player(self, player: Player):
         """Add a player to the game while it is not running yet and raise a GameFullError if the game is full.
         This function is used by the gRPC server."""
 
@@ -195,7 +195,7 @@ class SeekersGame:
             p = self.renderer.students_ttest(self.players.values())
             print(f"T-Test (probability of null hypothesis): {p:.2e} ({p:.2%})")
 
-    def get_new_player_color(self, player: InternalPlayer) -> Color:
+    def get_new_player_color(self, player: Player) -> Color:
         old_colors = [p.color for p in self.players.values() if p.color is not None]
 
         preferred = (
@@ -205,5 +205,5 @@ class SeekersGame:
         return colors.pick_new(old_colors, preferred, threshold=self.config.global_color_threshold)
 
     @property
-    def seekers(self) -> collections.ChainMap[str, InternalSeeker]:
+    def seekers(self) -> collections.ChainMap[str, Seeker]:
         return collections.ChainMap(*(p.seekers for p in self.players.values()))

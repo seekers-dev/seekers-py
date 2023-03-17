@@ -4,7 +4,7 @@ from .seekers_types import *
 import typing
 
 
-def tick(players: typing.Iterable[InternalPlayer], camps: list[Camp], goals: list[InternalGoal],
+def tick(players: typing.Iterable[Player], camps: list[Camp], goals: list[Goal],
          animations: list[Animation], world: World):
     seekers = [s for p in players for s in p.seekers.values()]
     # move and recover seekers
@@ -29,15 +29,15 @@ def tick(players: typing.Iterable[InternalPlayer], camps: list[Camp], goals: lis
             if phys1 is phys2:
                 continue
 
-            d = world.torus_distance(phys2.position, phys1.position)
+            d = world.torus_difference(phys2.position, phys1.position).squared_length()
 
             min_dist = phys1.radius + phys2.radius
 
-            if d < min_dist:
-                if isinstance(phys1, InternalSeeker) and isinstance(phys2, InternalSeeker):
-                    InternalSeeker.collision(phys1, phys2, world)
+            if d < min_dist ** 2:
+                if isinstance(phys1, Seeker) and isinstance(phys2, Seeker):
+                    Seeker.collision(phys1, phys2, world)
                 else:
-                    InternalPhysical.collision(phys1, phys2, world)
+                    Physical.collision(phys1, phys2, world)
 
     # handle goals and scoring
     for i, g in enumerate(goals):
@@ -54,7 +54,7 @@ def tick(players: typing.Iterable[InternalPlayer], camps: list[Camp], goals: lis
             animations.pop(i)
 
 
-def goal_scored(player: InternalPlayer, goal_index: int, goals: list[Goal], animations: list[Animation], world: World):
+def goal_scored(player: Player, goal_index: int, goals: list[Goal], animations: list[Animation], world: World):
     player.score += 1
 
     goal = goals[goal_index]

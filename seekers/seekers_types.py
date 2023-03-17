@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import logging
 import os
 import threading
@@ -147,6 +148,8 @@ class Config:
 
 
 class Vector:
+    __slots__ = ("x", "y")
+
     def __init__(self, x: float = 0, y: float = 0):
         self.x = x
         self.y = y
@@ -289,7 +292,7 @@ class Physical:
 
         world.normalize_position(self.position)
 
-    def collision(self, other: "InternalPhysical", world: "World"):
+    def collision(self, other: "Physical", world: "World"):
         # elastic collision
         min_dist = self.radius + other.radius
 
@@ -310,38 +313,27 @@ class Physical:
             other.position -= dn * (ddn - min_dist)
 
 
-class InternalPhysical(Physical):
-    ...
-
-
 class Goal(Physical):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.owner: "Player | None" = None
-        self.owned_for: int = 0
-
-
-class InternalGoal(InternalPhysical, Goal):
     def __init__(self, scoring_time: float, *args, **kwargs):
-        Goal.__init__(self, *args, **kwargs)
+        Physical.__init__(self, *args, **kwargs)
 
         self.owner: "Player | None" = None
         self.owned_for: int = 0
 
-        self.config_scoring_time = scoring_time
+        self.scoring_time = scoring_time
 
     @classmethod
-    def from_config(cls, id_: str, position: Vector, config: Config) -> InternalGoal:
+    def from_config(cls, id_: str, position: Vector, config: Config) -> Goal:
         return cls(
-            config.goal_scoring_time,
-            id_,
-            position,
-            Vector(0, 0),
-            config.goal_mass,
-            config.goal_radius,
-            config.physical_friction,
-            config.seeker_thrust,
-            config.flags_experimental_friction
+            scoring_time=config.goal_scoring_time,
+            id_=id_,
+            position=position,
+            velocity=Vector(0, 0),
+            mass=config.goal_mass,
+            radius=config.goal_radius,
+            friction=config.physical_friction,
+            base_thrust=config.seeker_thrust,
+            experimental_friction=config.flags_experimental_friction
         )
 
     def camp_tick(self, camp: "Camp") -> bool:
@@ -352,16 +344,9 @@ class InternalGoal(InternalPhysical, Goal):
             else:
                 self.owned_for = 0
                 self.owner = camp.owner
-            return self.owned_for >= self.config_scoring_time
+            return self.owned_for >= self.scoring_time
         else:
             return False
-
-    def to_ai_input(self, players: dict[str, Player]) -> Goal:
-        g = Goal(self.id, self.position.copy(), self.velocity.copy(), self.mass, self.radius,
-                 self.friction, self.base_thrust, self.experimental_friction)
-        g.owner = None if self.owner is None else players[self.owner.id]
-        g.owned_for = self.owned_for
-        return g
 
 
 class Magnet:
@@ -393,16 +378,39 @@ class Magnet:
 
 
 class Seeker(Physical):
-    def __init__(self, owner: Player, *args, **kwargs):
+    def __init__(self, owner: Player, disabled_time: float, magnet_slowdown: float, *args, **kwargs):
         Physical.__init__(self, *args, **kwargs)
-        self.target = self.position
+
+        self.target = self.position.copy()
         self.disabled_counter = 0
         self.magnet = Magnet()
+
         self.owner = owner
+        self.disabled_time = disabled_time
+        self.magnet_slowdown = magnet_slowdown
+
+    @classmethod
+    def from_config(cls, owner: Player, id_: str, position: Vector, config: Config):
+        return cls(
+            owner=owner,
+            disabled_time=config.seeker_disabled_time,
+            magnet_slowdown=config.seeker_magnet_slowdown,
+            id_=id_,
+            position=position,
+            velocity=Vector(),
+            mass=config.seeker_mass,
+            radius=config.seeker_radius,
+            friction=config.physical_friction,
+            base_thrust=config.seeker_thrust,
+            experimental_friction=config.flags_experimental_friction
+        )
 
     @property
     def is_disabled(self):
         return self.disabled_counter > 0
+
+    def disable(self):
+        self.disabled_counter = self.disabled_time
 
     def disabled(self):
         return self.is_disabled
@@ -411,53 +419,16 @@ class Seeker(Physical):
         def bump(r) -> float:
             return math.exp(1 / (r ** 2 - 1)) if r < 1 else 0
 
-        r = world.torus_distance(self.position, pos) / world.diameter()
-        d = world.torus_direction(self.position, pos)
+        torus_diff = world.torus_difference(self.position, pos)
+        torus_diff_len = torus_diff.length()
 
-        return Vector(0, 0) if self.is_disabled else - d * (self.magnet.strength * bump(r * 10)) * self.base_thrust
+        r = torus_diff_len / world.diameter()
+        direction = torus_diff / torus_diff_len
 
-    # methods below are left in for compatibility
-    def set_magnet_repulsive(self):
-        self.magnet.set_repulsive()
+        if self.is_disabled:
+            return Vector(0, 0)
 
-    def set_magnet_attractive(self):
-        self.magnet.set_attractive()
-
-    def disable_magnet(self):
-        self.magnet.disable()
-
-    def set_magnet_disabled(self):
-        self.magnet.disable()
-
-
-class InternalSeeker(InternalPhysical, Seeker):
-    def __init__(self, owner: InternalPlayer, disabled_time: float, magnet_slowdown: float, *args, **kwargs):
-        Seeker.__init__(self, owner, *args, **kwargs)
-        self.target = self.position.copy()
-        self.disabled_counter = 0
-        self.magnet = Magnet()
-
-        self.disabled_time = disabled_time
-        self.magnet_slowdown = magnet_slowdown
-
-    @classmethod
-    def from_config(cls, owner: InternalPlayer, id_: str, position: Vector, config: Config):
-        return cls(
-            owner,
-            config.seeker_disabled_time,
-            config.seeker_magnet_slowdown,
-            id_,
-            position,
-            Vector(),
-            config.seeker_mass,
-            config.seeker_radius,
-            config.physical_friction,
-            config.seeker_thrust,
-            config.flags_experimental_friction
-        )
-
-    def disable(self):
-        self.disabled_counter = self.disabled_time
+        return - direction * (self.magnet.strength * bump(r * 10)) * self.base_thrust
 
     def update_acceleration(self, world: World):
         if self.disabled_counter == 0:
@@ -474,7 +445,7 @@ class InternalSeeker(InternalPhysical, Seeker):
         """Return whether the magnet is on and the seeker is not disabled."""
         return self.magnet.is_on() and not self.is_disabled
 
-    def collision(self, other: "InternalSeeker", world: World):
+    def collision(self, other: "Seeker", world: World):
         if self.magnet_effective():
             self.disable()
         if other.magnet_effective():
@@ -484,22 +455,30 @@ class InternalSeeker(InternalPhysical, Seeker):
             self.disable()
             other.disable()
 
-        InternalPhysical.collision(self, other, world)
+        Physical.collision(self, other, world)
 
-    def to_ai_input(self, owner: "Player") -> Seeker:
-        s = Seeker(owner, self.id, self.position.copy(), self.velocity.copy(), self.mass, self.radius,
-                   self.friction, self.base_thrust, self.experimental_friction)
-        s.disabled_counter = self.disabled_counter
-        s.target = self.target.copy()
+    # methods below are left in for compatibility
+    def set_magnet_repulsive(self):
+        self.magnet.set_repulsive()
 
-        return s
+    def set_magnet_attractive(self):
+        self.magnet.set_attractive()
+
+    def disable_magnet(self):
+        self.magnet.disable()
+
+    def set_magnet_disabled(self):
+        self.magnet.disable()
 
 
 AiInput = tuple[
-    list[Seeker], list[Seeker], list[Seeker], list[Goal], list["Player"], "Camp", list["Camp"], "World", float
+    list[Seeker], list[Seeker], list[Seeker], list[Goal], list["Player"], "Camp", list[
+        "Camp"], "World", float
 ]
 DecideCallable = typing.Callable[
-    [list[Seeker], list[Seeker], list[Seeker], list[Goal], list["Player"], "Camp", list["Camp"], "World", float],
+    [list[Seeker], list[Seeker], list[Seeker], list[Goal], list["Player"], "Camp",
+     list["Camp"], "World",
+     float],
     list[Seeker]
     # my seekers   other seekers all seekers   goals       other_players   my camp camps         world    time
     # new my seekers
@@ -515,26 +494,12 @@ class Player:
 
     color: Color | None = dataclasses.field(init=False, default=None)
     camp: typing.Union["Camp", None] = dataclasses.field(init=False, default=None)
-
-
-@dataclasses.dataclass
-class InternalPlayer(Player):
-    seekers: dict[str, InternalSeeker]
-
     debug_drawings: list = dataclasses.field(init=False, default_factory=list)
-
     preferred_color: Color | None = dataclasses.field(init=False, default=None)
 
-    def to_ai_input(self) -> Player:
-        player = Player(self.id, self.name, self.score, {})
-        player.seekers = {s.id: s.to_ai_input(player) for s in self.seekers.values()}
-        player.camp = self.camp.to_ai_input(player)
-
-        return player
-
     @abc.abstractmethod
-    def poll_ai(self, wait: bool, world: "World", goals: list[InternalGoal],
-                players: dict[str, "InternalPlayer"], time_: float, debug: bool):
+    def poll_ai(self, wait: bool, world: "World", goals: list[Goal],
+                players: dict[str, "Player"], time_: float, debug: bool):
         ...
 
 
@@ -609,31 +574,94 @@ class LocalPlayerAi:
 
 
 @dataclasses.dataclass
-class LocalPlayer(InternalPlayer):
+class LocalPlayer(Player):
     """A player whose decide function is called directly. See README.md old method."""
     ai: LocalPlayerAi
+
+    _ai_seekers: dict[str, Seeker] = dataclasses.field(init=False, default=None)
+    _ai_goals: list[Goal] = dataclasses.field(init=False, default=None)
+    _ai_players: dict[str, "Player"] = dataclasses.field(init=False, default=None)
 
     @property
     def preferred_color(self) -> Color | None:
         return self.ai.preferred_color
 
+    def init_ai_state(self, goals: list[Goal], players: dict[str, "Player"]):
+        self._ai_goals = []
+        for goal in goals:
+            self._ai_goals.append(
+                copy.deepcopy(goal)
+            )
+
+        self._ai_players = {}
+        self._ai_seekers = {}
+
+        for player in players.values():
+            p = Player(
+                id=player.id,
+                name=player.name,
+                score=player.score,
+                seekers={},
+            )
+            p.color = copy.deepcopy(player.color)
+            p.preferred_color = copy.deepcopy(player.preferred_color)
+            p.camp = Camp(
+                id=player.camp.id,
+                owner=p,
+                position=player.camp.position.copy(),
+                width=player.camp.width,
+                height=player.camp.height
+            )
+
+            self._ai_players[player.id] = p
+
+            for seeker in player.seekers.values():
+                s = copy.deepcopy(seeker)
+                s.owner = p
+
+                p.seekers[seeker.id] = s
+                self._ai_seekers[seeker.id] = s
+
+    def update_ai_state(self, goals: list[Goal], players: dict[str, "Player"]):
+        if self._ai_seekers is None:
+            self.init_ai_state(goals, players)
+
+        for ai_goal, goal in zip(self._ai_goals, goals):
+            ai_goal.position = goal.position.copy()
+            ai_goal.velocity = goal.velocity.copy()
+            ai_goal.owner = self._ai_players[goal.owner.id] if goal.owner else None
+            ai_goal.owned_for = goal.owned_for
+
+        for ai_seeker, seeker in zip(self._ai_seekers.values(), self.seekers.values()):
+            ai_seeker.position = seeker.position.copy()
+            ai_seeker.velocity = seeker.velocity.copy()
+            ai_seeker.target = seeker.target.copy()
+            ai_seeker.disabled_counter = seeker.disabled_counter
+            ai_seeker.magnet.strength = seeker.magnet.strength
+
     def get_ai_input(self,
                      world: "World",
-                     _goals: list[InternalGoal],
-                     _players: dict[str, "InternalPlayer"],
+                     goals: list[Goal],
+                     players: dict[str, "Player"],
                      time: float
                      ) -> AiInput:
-        players = {p.id: p.to_ai_input() for p in _players.values()}
-        me = players[self.id]
+        self.update_ai_state(goals, players)
+
+        me = self._ai_players[self.id]
         my_camp = me.camp
         my_seekers = list(me.seekers.values())
-        other_seekers = [s for p in players.values() for s in p.seekers.values() if p is not me]
+        other_seekers = [s for p in self._ai_players.values() for s in p.seekers.values() if p is not me]
         all_seekers = my_seekers + other_seekers
-        camps = [p.camp for p in players.values()]
+        camps = [p.camp for p in self._ai_players.values()]
 
-        goals = [g.to_ai_input(players) for g in _goals]
-
-        return my_seekers, other_seekers, all_seekers, goals, list(players.values()), my_camp, camps, world, time
+        return (
+            my_seekers, other_seekers, all_seekers,
+            self._ai_goals,
+            list(self._ai_players.values()),
+            my_camp, camps,
+            World(world.width, world.height),
+            time
+        )
 
     def call_ai(self, ai_input: AiInput, debug: bool) -> typing.Any:
         def call():
@@ -690,7 +718,7 @@ class LocalPlayer(InternalPlayer):
 
             own_seeker.magnet.strength = int(ai_seeker.magnet.strength)
 
-    def poll_ai(self, wait: bool, world: "World", goals: list[InternalGoal], players: dict[str, "InternalPlayer"],
+    def poll_ai(self, wait: bool, world: "World", goals: list[Goal], players: dict[str, "Player"],
                 time_: float, debug: bool):
         # ignore wait flag, supporting it would be a lot of extra code
 
@@ -713,7 +741,7 @@ class LocalPlayer(InternalPlayer):
         )
 
 
-class GrpcClientPlayer(InternalPlayer):
+class GrpcClientPlayer(Player):
     """A player whose decide function is called via a gRPC server and client. See README.md new method."""
 
     def __init__(self, token: str, *args, preferred_color: Color | None = None, **kwargs):
@@ -735,7 +763,7 @@ class GrpcClientPlayer(InternalPlayer):
 
         self.was_updated.clear()
 
-    def poll_ai(self, wait: bool, world: "World", goals: list[InternalGoal], players: dict[str, "InternalPlayer"],
+    def poll_ai(self, wait: bool, world: "World", goals: list[Goal], players: dict[str, "Player"],
                 time_: float, debug: bool):
         if wait:
             self.wait_for_update()
@@ -767,14 +795,6 @@ class World:
     def middle(self) -> Vector:
         return self.geometry / 2
 
-    def torus_distance(self, left: Vector, right: Vector, /) -> float:
-        def dist1d(l, a, b):
-            delta = abs(a - b)
-            return min(delta, l - delta)
-
-        return Vector(dist1d(self.width, right.x, left.x),
-                      dist1d(self.height, right.y, left.y)).length()
-
     def torus_difference(self, left: Vector, right: Vector, /) -> Vector:
         def diff1d(l, a, b):
             delta = abs(a - b)
@@ -782,6 +802,9 @@ class World:
 
         return Vector(diff1d(self.width, left.x, right.x),
                       diff1d(self.height, left.y, right.y))
+
+    def torus_distance(self, left: Vector, right: Vector, /) -> float:
+        return self.torus_difference(left, right).length()
 
     def torus_direction(self, left: Vector, right: Vector, /) -> Vector:
         return self.torus_difference(left, right).normalized()
@@ -831,7 +854,7 @@ class World:
 @dataclasses.dataclass
 class Camp:
     id: str
-    owner: InternalPlayer | Player
+    owner: Player
     position: Vector
     width: float
     height: float
@@ -839,9 +862,6 @@ class Camp:
     def contains(self, pos: Vector) -> bool:
         delta = self.position - pos
         return 2 * abs(delta.x) < self.width and 2 * abs(delta.y) < self.height
-
-    def to_ai_input(self, owner: Player) -> "Camp":
-        return Camp(self.id, owner, self.position, self.width, self.height)
 
     @property
     def top_left(self) -> Vector:

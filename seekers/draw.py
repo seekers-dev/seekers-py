@@ -53,7 +53,7 @@ class GameRenderer:
 
         return pos + (self.world.middle() - self.reference())
 
-    def init(self, players: Iterable[InternalPlayer], goals: list[InternalGoal]):
+    def init(self, players: Iterable[Player], goals: list[Goal]):
         pygame.init()
 
         for p in players:
@@ -123,7 +123,7 @@ class GameRenderer:
             p1, p2
         )
 
-    def draw(self, players: Collection[InternalPlayer], camps: Iterable[Camp], goals: Iterable[InternalGoal],
+    def draw(self, players: Collection[Player], camps: Iterable[Camp], goals: Iterable[Goal],
              animations: list[Animation], clock: pygame.time.Clock):
         # clear screen
         self.screen.fill(self.background_color)
@@ -161,7 +161,7 @@ class GameRenderer:
         # update display
         pygame.display.flip()
 
-    def draw_seeker(self, seeker: InternalSeeker, player: InternalPlayer, debug_str: str):
+    def draw_seeker(self, seeker: Seeker, player: Player, debug_str: str):
         color = player.color
         if seeker.is_disabled:
             color = interpolate_color(color, [0, 0, 0], 0.5)
@@ -172,7 +172,7 @@ class GameRenderer:
         if self.debug_mode:
             self.draw_text(debug_str, (0, 0, 0), seeker.position)
 
-    def draw_halo(self, seeker: InternalSeeker, color: Color):
+    def draw_halo(self, seeker: Seeker, color: Color):
         adjpos = seeker.position
         if seeker.is_disabled:
             return
@@ -187,14 +187,14 @@ class GameRenderer:
             mu = int(-seeker.magnet.strength * pygame.time.get_ticks() / 50 + offset) % 50
             self.draw_circle(interpolate_color(color, [0, 0, 0], mu / 50), adjpos, mu + seeker.radius, 2)
 
-    def draw_jet_stream(self, seeker: InternalSeeker, direction: Vector):
+    def draw_jet_stream(self, seeker: Seeker, direction: Vector):
         length = seeker.radius * 3
         adjpos = seeker.position
 
         self.draw_line((255, 255, 255), adjpos, adjpos + direction * length)
 
     @staticmethod
-    def students_ttest(players: Collection[InternalPlayer]) -> float:
+    def students_ttest(players: Collection[Player]) -> float:
         if len(players) != 2:
             raise ValueError("Students t-test only works with 2 players.")
 
@@ -212,7 +212,7 @@ class GameRenderer:
         t, p = stats.ttest_1samp([1] * score0 + [0] * score1, 0.5)
         return p
 
-    def draw_information(self, players: Collection[InternalPlayer], pos: Vector, clock: pygame.time.Clock):
+    def draw_information(self, players: Collection[Player], pos: Vector, clock: pygame.time.Clock):
         # draw fps
         fps = int(clock.get_fps())
         self.draw_text(str(fps), (250, 250, 250), pos, center=False, relative=False)
