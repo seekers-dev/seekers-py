@@ -423,7 +423,7 @@ class Seeker(Physical):
         torus_diff_len = torus_diff.length()
 
         r = torus_diff_len / world.diameter()
-        direction = torus_diff / torus_diff_len
+        direction = (torus_diff / torus_diff_len) if torus_diff_len != 0 else Vector(0, 0)
 
         if self.is_disabled:
             return Vector(0, 0)
@@ -632,12 +632,15 @@ class LocalPlayer(Player):
             ai_goal.owner = self._ai_players[goal.owner.id] if goal.owner else None
             ai_goal.owned_for = goal.owned_for
 
-        for ai_seeker, seeker in zip(self._ai_seekers.values(), self.seekers.values()):
-            ai_seeker.position = seeker.position.copy()
-            ai_seeker.velocity = seeker.velocity.copy()
-            ai_seeker.target = seeker.target.copy()
-            ai_seeker.disabled_counter = seeker.disabled_counter
-            ai_seeker.magnet.strength = seeker.magnet.strength
+        for player in players.values():
+            for seeker_id, seeker in player.seekers.items():
+                ai_seeker = self._ai_seekers[seeker_id]
+
+                ai_seeker.position = seeker.position.copy()
+                ai_seeker.velocity = seeker.velocity.copy()
+                ai_seeker.target = seeker.target.copy()
+                ai_seeker.disabled_counter = seeker.disabled_counter
+                ai_seeker.magnet.strength = seeker.magnet.strength
 
     def get_ai_input(self,
                      world: "World",
