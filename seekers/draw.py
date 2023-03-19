@@ -68,6 +68,7 @@ class GameRenderer:
             self.player_name_images[p.id] = self.font.render(name, True, p.color)
 
         self.screen = pygame.display.set_mode(self.config.map_dimensions)
+        pygame.display.set_caption("Seekers")
 
         self.reference = self.parse_reference(list(players), goals)
 
