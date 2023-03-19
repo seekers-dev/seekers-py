@@ -5,7 +5,7 @@
 * AIs compete by controlling bouncy little circles ("seekers") trying to collect the most goals.
 * Based on Python 3.10/3.9 and pygame.
 
-![Screenshot_20221213_193620](https://user-images.githubusercontent.com/37810842/207417325-30e82c8b-b53b-44e7-9d41-ca431dc579e2.png)
+![image](https://user-images.githubusercontent.com/37810842/226148194-e5b55d57-ed84-4e71-869b-d062b101b345.png)
 
 ## This repository contains
 1. Python implementation of the Seekers game
