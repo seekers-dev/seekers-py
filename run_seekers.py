@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import sys
 
@@ -9,6 +11,21 @@ pygame.init()
 from seekers import *
 
 
+def parse_config_overrides(overrides: list[str]) -> dict[str, str]:
+    parsed = {}
+
+    for override in overrides:
+        if "=" not in override:
+            raise ValueError(f"Invalid config override {override!r}. "
+                             f"Use the form option=value, e.g. global.seed=43")
+
+        option, value = override.split("=", maxsplit=1)
+
+        parsed[option.strip()] = value.strip()
+
+    return parsed
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run python seekers AIs.")
     parser.add_argument("--nogrpc", action="store_true", help="Don't host a gRPC server.")
@@ -18,6 +35,8 @@ def main():
                         help="Address of the server. (default: localhost:7777)")
     parser.add_argument("-config", "-c", type=str, default="default_config.ini",
                         help="Path to the config file. (default: default_config.ini)")
+    parser.add_argument("-config-override", "-co", action="append",
+                        help="Override a config option. Use the form option=value, e.g. global.seed=43")
     parser.add_argument("-loglevel", "-log", "-l", type=str, default="INFO",
                         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"])
     parser.add_argument("-seed", "-s", type=int, default=42, help="Seed for the random number generator. (default: 42)")
@@ -25,13 +44,21 @@ def main():
 
     args = parser.parse_args()
 
+    parsed_config_overrides = parse_config_overrides(args.config_override or [])
+
+    config_dict = Config.from_filepath(args.config).to_properties() | parsed_config_overrides
+    try:
+        config = Config.from_properties(config_dict)
+    except KeyError as e:
+        raise ValueError(f"Invalid config option {e.args[0]!r}.") from e
+
     logging.basicConfig(level=args.loglevel, style="{", format=f"[{{name}}] {{levelname}}: {{message}}",
                         stream=sys.stdout)
     address = args.address if not args.nogrpc else False
 
     seekers_game = SeekersGame(
         local_ai_locations=args.ai_files,
-        config=Config.from_filepath(args.config),
+        config=config,
         grpc_address=address,
         seed=args.seed,
         debug=args.debug,

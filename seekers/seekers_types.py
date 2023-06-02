@@ -113,6 +113,26 @@ class Config:
         with open(filepath) as f:
             return cls.from_file(f)
 
+    @staticmethod
+    def _dump_value(value: typing.Any) -> str:
+        if isinstance(value, bool):
+            return str(value).lower()
+        elif isinstance(value, float):
+            return f"{value:.2f}"
+        else:
+            return str(value)
+
+    @staticmethod
+    def _load_value(value: str, type_: str):
+        if type_ == "bool":
+            return value.lower() == "true"
+        elif type_ == "float":
+            return float(value)
+        elif type_ == "int":
+            return int(value)
+        else:
+            return value
+
     def to_properties(self) -> dict[str, str]:
         self_dict = dataclasses.asdict(self)
 
@@ -121,7 +141,7 @@ class Config:
             specifier = specifier.replace("_", "-")
             return specifier
 
-        return {convert_specifier(k): str(v) for k, v in self_dict.items()}
+        return {convert_specifier(k): self._dump_value(v) for k, v in self_dict.items()}
 
     @classmethod
     def from_properties(cls, properties: dict[str, str]) -> "Config":
@@ -134,13 +154,9 @@ class Config:
         for key, value in properties.items():
             # field.name-example -> field_name_example
             field_name = key.replace(".", "_").replace("-", "_")
-            # convert the value to the correct type
-            try:
-                type_ = eval(all_kwargs[field_name])  # annotations are strings for python 3.9 compatibility
-            except KeyError:
-                continue
 
-            kwargs[field_name] = type_(value)
+            # convert the value to the correct type
+            kwargs[field_name] = cls._load_value(value, all_kwargs[field_name])
 
         kwargs = all_fields_as_none | kwargs
 
