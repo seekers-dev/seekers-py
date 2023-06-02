@@ -33,6 +33,7 @@ class Config:
     """Configuration for the Seekers game."""
     global_wait_for_players: bool
     global_playtime: int
+    global_seed: int
     global_fps: int
     global_speed: int
     global_players: int
@@ -78,6 +79,7 @@ class Config:
         return cls(
             global_wait_for_players=cp.getboolean("global", "wait-for-players"),
             global_playtime=cp.getint("global", "playtime"),
+            global_seed=cp.getint("global", "seed"),
             global_fps=cp.getint("global", "fps"),
             global_speed=cp.getint("global", "speed"),
             global_players=cp.getint("global", "players"),

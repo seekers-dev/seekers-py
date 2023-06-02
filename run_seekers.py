@@ -39,7 +39,6 @@ def main():
                         help="Override a config option. Use the form option=value, e.g. global.seed=43")
     parser.add_argument("-loglevel", "-log", "-l", type=str, default="INFO",
                         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"])
-    parser.add_argument("-seed", "-s", type=int, default=42, help="Seed for the random number generator. (default: 42)")
     parser.add_argument("ai_files", type=str, nargs="*", help="Paths to the AIs.")
 
     args = parser.parse_args()
@@ -60,7 +59,6 @@ def main():
         local_ai_locations=args.ai_files,
         config=config,
         grpc_address=address,
-        seed=args.seed,
         debug=args.debug,
         dont_kill=args.nokill
     )
