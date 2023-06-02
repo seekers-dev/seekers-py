@@ -89,7 +89,7 @@ def convert_goal(goal: types.GoalStatus, camps: dict[str, seekers.Camp], config:
         scoring_time=config.goal_scoring_time
     )
 
-    out.owned_for = goal.time_owned
+    out.time_owned = goal.time_owned
     if goal.camp_id in camps:
         out.owner = camps[goal.camp_id].owner
     else:
@@ -102,7 +102,7 @@ def convert_goal_back(goal: seekers.Goal) -> GoalStatus:
     return GoalStatus(
         super=convert_physical_back(goal),
         camp_id=goal.owner.id if goal.owner else "",
-        time_owned=goal.owned_for
+        time_owned=goal.time_owned
     )
 
 
