@@ -1,0 +1,4 @@
+protoletariat
+mypy-protobuf
+grpclib
+protobuf==4.23.2
