@@ -25,6 +25,8 @@ class SeekersGame:
                  debug: bool = True, print_scores: bool = True, dont_kill: bool = False):
         self._logger = logging.getLogger("SeekersGame")
 
+        self._logger.debug(f"Config: {config.to_properties()}")
+
         self.config = config
         self.debug = debug
         self.seed = seed
