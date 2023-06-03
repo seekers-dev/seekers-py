@@ -10,7 +10,9 @@ import threading
 
 import seekers
 from seekers.grpc.converters import *
-from .stubs.org.seekers.net.hosting_pb2 import GameDescription
+from .stubs.org.seekers.net.hosting_pb2 import GameDescription, ListRequest, PingRequest, JoinRequest, JoinResponse, \
+    HostRequest
+from .stubs.org.seekers.net.hosting_pb2_grpc import HostingStub
 from .stubs.org.seekers.net.seekers_pb2 import PropertiesRequest, StatusResponse, StatusRequest, CommandRequest
 from .stubs.org.seekers.net.seekers_pb2_grpc import SeekersStub
 
@@ -29,14 +31,37 @@ class GameFullError(GrpcSeekersClientError): ...
 class ServerUnavailableError(GrpcSeekersClientError): ...
 
 
+class GrpcHostingClient:
+    def __init__(self, address: str):
+        self.channel = grpc.insecure_channel(address)
+        self.stub = HostingStub(self.channel)
+
+    def list(self) -> list[GameDescription]:
+        return self.stub.List(ListRequest()).descriptions
+
+    def ping(self) -> float:
+        send_time = time.time()
+        receive_time = self.stub.Ping(PingRequest()).ping
+
+        return receive_time - send_time
+
+    def join(self, *, name: str, color: seekers.Color, **details) -> JoinResponse:
+        return self.stub.Join(JoinRequest(
+            details={"name": name, "color": color_to_grpc(color), **details}
+        ))
+
+    def host(self, game_description: GameDescription):
+        return self.stub.Host(HostRequest(description=game_description))
+
+
 class GrpcSeekersServiceWrapper:
     """A wrapper for the Seekers gRPC service."""
 
-    def __init__(self, token: str, player_id: str, game_description: GameDescription):
+    def __init__(self, token: str, player_id: str, address: str):
         self.name = player_id
         self.token = token
 
-        self.channel = grpc.insecure_channel(f"{game_description.address}:{game_description.port}")
+        self.channel = grpc.insecure_channel(address)
         self.stub = SeekersStub(self.channel)
 
         self.channel_connectivity_status = None
