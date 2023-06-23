@@ -33,11 +33,11 @@ class SeekersGame:
         self.do_print_scores = print_scores
         self.dont_kill = dont_kill
 
-        if grpc_address:
+        if not grpc_address:
+            self.grpc = None
+        else:
             from .grpc import GrpcSeekersServer
             self.grpc = GrpcSeekersServer(self, grpc_address)
-        else:
-            self.grpc = None
 
         self.players = self.load_local_players(local_ai_locations)
         if self.players and not config.global_wait_for_players:
@@ -115,6 +115,9 @@ class SeekersGame:
 
                 self.ticks += 1
 
+                if self.grpc:
+                    self.grpc.new_tick()
+
             # draw graphics
             self.renderer.draw(self.players.values(), self.camps, self.goals, self.animations, self.clock)
 
@@ -137,7 +140,7 @@ class SeekersGame:
             last_diff = None
             while len(self.players) < self.config.global_players:
                 # start can be called multiple times
-                self.grpc.start()
+                self.grpc.start_server()
 
                 new_diff = self.config.global_players - len(self.players)
 

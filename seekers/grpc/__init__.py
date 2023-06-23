@@ -1,22 +1,16 @@
 from __future__ import annotations
 
-from collections import defaultdict
-
-import grpc
+from concurrent.futures import ThreadPoolExecutor
 from grpc._channel import _InactiveRpcError
+from collections import defaultdict
 import time
 import logging
 import threading
 
-import seekers
+import seekers.colors
 from seekers.grpc.converters import *
-from .stubs.org.seekers.net.hosting_pb2 import GameDescription, ListRequest, PingRequest, JoinRequest, JoinResponse, \
-    HostRequest
-from .stubs.org.seekers.net.hosting_pb2_grpc import HostingStub
-from .stubs.org.seekers.net.seekers_pb2 import PropertiesRequest, StatusResponse, StatusRequest, CommandRequest
-from .stubs.org.seekers.net.seekers_pb2_grpc import SeekersStub
-
-_VERSION = "1"
+from .stubs.org.seekers.net.seekers_pb2 import *
+from .stubs.org.seekers.net.seekers_pb2_grpc import *
 
 
 class GrpcSeekersClientError(Exception): ...
@@ -31,35 +25,12 @@ class GameFullError(GrpcSeekersClientError): ...
 class ServerUnavailableError(GrpcSeekersClientError): ...
 
 
-class GrpcHostingClient:
-    def __init__(self, address: str):
-        self.channel = grpc.insecure_channel(address)
-        self.stub = HostingStub(self.channel)
-
-    def list(self) -> list[GameDescription]:
-        return self.stub.List(ListRequest()).descriptions
-
-    def ping(self) -> float:
-        send_time = time.time()
-        receive_time = self.stub.Ping(PingRequest()).ping
-
-        return receive_time - send_time
-
-    def join(self, *, name: str, color: seekers.Color, **details) -> JoinResponse:
-        return self.stub.Join(JoinRequest(
-            details={"name": name, "color": color_to_grpc(color), **details}
-        ))
-
-    def host(self, game_description: GameDescription):
-        return self.stub.Host(HostRequest(description=game_description))
-
-
 class GrpcSeekersServiceWrapper:
     """A wrapper for the Seekers gRPC service."""
 
-    def __init__(self, token: str, player_id: str, address: str):
-        self.name = player_id
-        self.token = token
+    def __init__(self, address: str = "localhost:7777"):
+        self.name: str | None = None
+        self.token: str | None = None
 
         self.channel = grpc.insecure_channel(address)
         self.stub = SeekersStub(self.channel)
@@ -72,17 +43,41 @@ class GrpcSeekersServiceWrapper:
     def _channel_connectivity_callback(self, state):
         self.channel_connectivity_status = state
 
+    def join(self, name: str, color: seekers.Color = None) -> str:
+        """Try to join the game and return our player id."""
+
+        color = seekers.colors.string_hash_color(name) if color is None else color
+
+        self._logger.info(f"Joining game as {name!r} with color {color!r}.")
+
+        try:
+            reply = self.stub.Join(JoinRequest(details=dict(name=name, color=color_to_grpc(color))))
+            self.token = reply.token
+            return reply.player_id
+        except _InactiveRpcError as e:
+            if e.code() in [grpc.StatusCode.UNAUTHENTICATED, grpc.StatusCode.INVALID_ARGUMENT]:
+                raise SessionTokenInvalidError(f"Requested name {name!r} is invalid.") from e
+            elif e.code() == grpc.StatusCode.ALREADY_EXISTS:
+                raise SessionTokenInvalidError(f"Name {name!r} is already in use.") from e
+            elif e.code() == grpc.StatusCode.RESOURCE_EXHAUSTED:
+                raise GameFullError("The game is full.") from e
+            elif e.code() == grpc.StatusCode.UNAVAILABLE:
+                raise ServerUnavailableError(
+                    f"The server is unavailable. Is it running already?"
+                ) from e
+            raise
+
     def server_properties(self) -> dict[str, str]:
-        return self.stub.Properties(PropertiesRequest()).entries
+        return self.stub.Properties(Empty()).entries
 
     def status(self) -> StatusResponse:
-        return self.stub.Status(StatusRequest(token=self.token))
+        return self.stub.Status(Empty())
 
-    def send_command(self, seeker_id: str, target: seekers.Vector, magnet: float) -> None:
+    def send_commands(self, commands: list[Command]) -> StatusResponse:
         if self.channel_connectivity_status != grpc.ChannelConnectivity.READY:
             raise ServerUnavailableError("Channel is not ready.")
 
-        self.stub.Command(CommandRequest(token=self.token, seeker_id=seeker_id, target=target, magnet=magnet))
+        return self.stub.Command(CommandRequest(token=self.token, commands=commands)).status
 
     def __del__(self):
         self.channel.close()
@@ -109,9 +104,14 @@ class GrpcSeekersClient:
         self.camps: dict[str, seekers.Camp] = {}
         self.goals: dict[str, seekers.Goal] = {}
 
+        self._status_response: StatusResponse | None = None
+
         self._last_seekers: dict[str, seekers.Seeker] = {}
 
         self._last_time_ai_updated = time.perf_counter()
+
+    def join(self, name: str, color: seekers.Color = None) -> None:
+        self.player_id = self.service_wrapper.join(name, color)
 
     def run(self):
         """Start the mainloop. This function blocks until the game ends."""
@@ -159,7 +159,9 @@ class GrpcSeekersClient:
         try:
             me = self.players[self.player_id]
         except KeyError as e:
-            raise GrpcSeekersClientError("Invalid Response: Own player_id not in PlayerReply.players.") from e
+            raise GrpcSeekersClientError(
+                f"Invalid Response: Own player_id ({self.player_id}) not in PlayerReply.players."
+            ) from e
 
         converted_other_seekers = [s for s in self.seekers.values() if s.owner != me]
         converted_other_players = [p for p in self.players.values() if p != me]
@@ -180,30 +182,13 @@ class GrpcSeekersClient:
             self.last_gametime,
         )
 
-    def wait_for_next_tick(self):
-        t = time.perf_counter()
-        while 1:
-            status_reply = self.service_wrapper.status()
-            if status_reply.passed_playtime != self.last_gametime:
-                break
-
-            if self.careful_mode and time.perf_counter() - t > 4:
-                raise GrpcSeekersClientError(f"Timeout while waiting for game tick. "
-                                             f"Server's clock did not advance. (t={status_reply.passed_playtime}).")
-
-            time.sleep(1 / 120)
-
-        if (status_reply.passed_playtime - self.last_gametime) > 1:
-            self._logger.debug(f"Missed time: {status_reply.passed_playtime - self.last_gametime - 1}")
-
-        return status_reply
-
     def tick(self):
         """Call the decide function and send the output to the server."""
 
-        status_reply = self.wait_for_next_tick()
+        if self._status_response is None:
+            self._status_response = self.service_wrapper.status()
 
-        self.update_state(status_reply)
+        self.update_state(self._status_response)
 
         ai_input = self.get_ai_input()
 
@@ -217,9 +202,11 @@ class GrpcSeekersClient:
 
         self.send_updates(new_seekers)
 
-    def send_updates(self, new_seekers: list[seekers.Seeker]):
-        for seeker in new_seekers:
-            self.service_wrapper.send_command(seeker.id, vector_to_grpc(seeker.target), seeker.magnet.strength)
+    def send_updates(self, new_seekers: list[seekers.Seeker]) -> None:
+        self._status_response = self.service_wrapper.send_commands([
+            Command(seeker_id=seeker.id, target=vector_to_grpc(seeker.target), magnet=seeker.magnet.strength)
+            for seeker in new_seekers
+        ])
 
     def update_state(self, status_reply: StatusResponse):
         self.last_gametime = status_reply.passed_playtime
@@ -307,25 +294,169 @@ class GrpcSeekersClient:
         self.goals |= {g.super.id: goal_to_seekers(g, self.camps, config) for g in status_reply.goals}
 
 
-class GrpcSeekersServicer:
-    """A Seekers game servicer. It implements all needed gRPC services and is compatible with the
-    ``GrpcSeekersRawClient``. It stores a reference to the game to have full control over it."""
-
+class GrpcSeekersServicer(SeekersServicer):
     def __init__(self, seekers_game: seekers.SeekersGame, game_start_event: threading.Event):
-        ...
+        self.game = seekers_game
+        self.game_start_event = game_start_event
+
+        self._status: StatusResponse | None = None
+        self._need_new_status = True
+        self.tokens: set[str] = set()
+
+        self._logger = logging.getLogger(self.__class__.__name__)
+
+    def Properties(self, request: Empty, context) -> PropertiesResponse:
+        return PropertiesResponse(entries=self.game.config.to_properties())
+
+    def new_tick(self):
+        """Invalidate the cached game status. Called by SeekersGame."""
+        self._need_new_status = True
+
+    def generate_status(self):
+        self.game_start_event.wait()
+        self._need_new_status = False
+
+        players = [
+            player_to_grpc(p) for p in self.game.players.values()
+        ]
+        camps = [camp_to_grpc(c) for c in self.game.camps]
+
+        self._status = StatusResponse(
+            players=players,
+            camps=camps,
+            seekers=[seeker_to_grpc(s) for s in self.game.seekers.values()],
+            goals=[goal_to_grpc(goal) for goal in self.game.goals],
+
+            passed_playtime=self.game.ticks,
+        )
+
+    def get_status(self) -> StatusResponse:
+        if self._status is None or self._need_new_status or 1:
+            self.generate_status()
+
+        return self._status
+
+    def Status(self, request: Empty, context) -> StatusResponse:
+        return self.get_status()
+
+    def Command(self, request: CommandRequest, context) -> CommandResponse | None:
+        self._logger.debug("Waiting for game start event.")
+        self.game_start_event.wait()
+
+        for command in request.commands:
+            try:
+                seeker = self.game.seekers[command.seeker_id]
+            except KeyError:
+                context.abort(grpc.StatusCode.NOT_FOUND, f"Seeker with id {command.seeker_id!r} not found in the game.")
+                return
+
+            # check if seeker is owned by player
+            # noinspection PyTypeChecker
+            if not isinstance(seeker.owner, seekers.GrpcClientPlayer) or seeker.owner.token != request.token:
+                context.abort(
+                    grpc.StatusCode.PERMISSION_DENIED,
+                    f"Seeker with id {command.seeker_id!r} (owner player id: {seeker.owner.id!r}) "
+                    f"is not owned by token {request.token!r}."
+                )
+                return
+
+            seeker.target = vector_to_seekers(command.target)
+            seeker.magnet.strength = command.magnet
+
+        if request.commands:
+            # noinspection PyUnboundLocalVariable
+            seeker.owner.was_updated.set()
+
+        return CommandResponse(status=self.get_status(), seekers_changed=len(request.commands))
+
+    def join_game(self, name: str, color: seekers.Color) -> tuple[str, str]:
+        # add the player with a new name if the requested name is already taken
+        _requested_name = name
+        i = 2
+        while _requested_name in {p.name for p in self.game.players.values()}:
+            _requested_name = f"{name} ({i})"
+            i += 1
+
+        # create new player
+        new_token = seekers.get_id("Token")
+        player = seekers.GrpcClientPlayer(
+            token=new_token,
+            id=seekers.get_id("Player"),
+            name=_requested_name,
+            score=0,
+            seekers={},
+            preferred_color=color
+        )
+        self.game.add_player(player)
+
+        self.tokens.add(new_token)
+        self._logger.info(f"Player {player.name!r} joined the game. ({player.id})")
+
+        return new_token, player.id
+
+    def Join(self, request: JoinRequest, context) -> JoinResponse | None:
+        self._logger.debug(f"Received JoinRequest: {request!r}")
+
+        # validate requested name
+        try:
+            requested_name = request.details["name"].strip()
+        except KeyError:
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                          "No 'name' key was provided in JoinRequest.details.")
+            return
+
+        if not requested_name:
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                          f"Requested name must not be empty or only consist of whitespace.")
+            return
+
+        color = (
+            seekers.colors.string_hash_color(requested_name)
+            if request.details.get("color") is None
+            else color_to_seekers(request.details["color"])
+        )
+
+        # add player to game
+        try:
+            new_token, player_id = self.join_game(requested_name, color)
+        except seekers.GameFullError:
+            context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED, "Game is full.")
+            return
+
+        return JoinResponse(token=new_token, player_id=player_id)
+
+    def Ping(self, request: Empty, context) -> PingResponse:
+        return PingResponse(timestamp=int(time.time() * 1000))
 
 
 class GrpcSeekersServer:
-    """A wrapper around the ``GrpcSeekersServicer`` that handles the gRPC server."""
+    """A wrapper around the GrpcSeekersServicer that handles the gRPC server."""
 
     def __init__(self, seekers_game: seekers.SeekersGame, address: str = "localhost:7777"):
-        ...
+        self._logger = logging.getLogger(self.__class__.__name__)
+        self.game_start_event = threading.Event()
 
-    def start(self):
-        ...
+        self.server = grpc.server(ThreadPoolExecutor())
+        self.servicer = GrpcSeekersServicer(seekers_game, self.game_start_event)
+        add_SeekersServicer_to_server(self.servicer, self.server)
+
+        self._is_running = False
+        self._address = address
+
+    def start_server(self):
+        if self._is_running:
+            return
+
+        self._logger.info(f"Starting server on {self._address!r}")
+        self.server.add_insecure_port(self._address)
+        self.server.start()
+        self._is_running = True
 
     def start_game(self):
-        ...
+        self.game_start_event.set()
 
     def stop(self):
-        ...
+        self.server.stop(None)
+
+    def new_tick(self):
+        self.servicer.new_tick()

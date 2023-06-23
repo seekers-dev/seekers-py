@@ -82,7 +82,7 @@ def grpc_game(playtime: int, speed: int, players: int, seed: int, filepaths: lis
         print_scores=False
     )
 
-    game.grpc.start()
+    game.grpc.start_server()
 
     processes = []
     for filepath in filepaths:
