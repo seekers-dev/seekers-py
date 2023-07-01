@@ -128,11 +128,11 @@ class GrpcSeekersClient:
                     raise
                 self._logger.error(f"Error: {e}")
             except grpc._channel._InactiveRpcError as e:
-                if not self.careful_mode and e.code() in {grpc.StatusCode.UNAVAILABLE, grpc.StatusCode.CANCELLED}:
+                if e.code() in {grpc.StatusCode.UNAVAILABLE, grpc.StatusCode.CANCELLED}:
                     # assume game has ended
                     self._logger.info("Game ended.")
                     break
-                elif e.code() in {grpc.StatusCode.UNKNOWN}:
+                elif e.code() in {grpc.StatusCode.UNKNOWN} and not self.careful_mode:
                     self._logger.error(f"Received status code UNKNOWN: {e}")
                 else:
                     raise GrpcSeekersClientError("gRPC request resulted in unhandled error.") from e
@@ -296,32 +296,32 @@ class GrpcSeekersClient:
 
 class GrpcSeekersServicer(SeekersServicer):
     def __init__(self, seekers_game: seekers.SeekersGame, game_start_event: threading.Event):
+        self._logger = logging.getLogger(self.__class__.__name__)
+
         self.game = seekers_game
         self.game_start_event = game_start_event
 
-        self._status: StatusResponse | None = None
-        self._need_new_status = True
+        self.current_status: StatusResponse | None = None
+        self.new_status_events: list[threading.Event] = []
         self.tokens: set[str] = set()
-
-        self._logger = logging.getLogger(self.__class__.__name__)
 
     def Properties(self, request: Empty, context) -> PropertiesResponse:
         return PropertiesResponse(entries=self.game.config.to_properties())
 
     def new_tick(self):
         """Invalidate the cached game status. Called by SeekersGame."""
-        self._need_new_status = True
+        self.generate_status()
+
+        for event in self.new_status_events:
+            event.set()
 
     def generate_status(self):
-        self.game_start_event.wait()
-        self._need_new_status = False
-
         players = [
             player_to_grpc(p) for p in self.game.players.values()
         ]
         camps = [camp_to_grpc(c) for c in self.game.camps]
 
-        self._status = StatusResponse(
+        self.current_status = StatusResponse(
             players=players,
             camps=camps,
             seekers=[seeker_to_grpc(s) for s in self.game.seekers.values()],
@@ -330,16 +330,15 @@ class GrpcSeekersServicer(SeekersServicer):
             passed_playtime=self.game.ticks,
         )
 
-    def get_status(self) -> StatusResponse:
-        if self._status is None or self._need_new_status or 1:
+    def Status(self, request: Empty, context) -> StatusResponse:
+        self.game_start_event.wait()
+
+        if self.current_status is None:
             self.generate_status()
 
-        return self._status
+        return self.current_status
 
-    def Status(self, request: Empty, context) -> StatusResponse:
-        return self.get_status()
-
-    def Command(self, request: CommandRequest, context) -> CommandResponse | None:
+    def Command(self, request: CommandRequest, context: grpc.ServicerContext) -> CommandResponse | None:
         self._logger.debug("Waiting for game start event.")
         self.game_start_event.wait()
 
@@ -367,7 +366,11 @@ class GrpcSeekersServicer(SeekersServicer):
             # noinspection PyUnboundLocalVariable
             seeker.owner.was_updated.set()
 
-        return CommandResponse(status=self.get_status(), seekers_changed=len(request.commands))
+        new_status_event = threading.Event()
+        self.new_status_events.append(new_status_event)
+        new_status_event.wait()
+
+        return CommandResponse(status=self.current_status, seekers_changed=len(request.commands))
 
     def join_game(self, name: str, color: seekers.Color) -> tuple[str, str]:
         # add the player with a new name if the requested name is already taken

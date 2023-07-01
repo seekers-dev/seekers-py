@@ -3,7 +3,7 @@ import threading
 import unittest
 
 from seekers import SeekersGame, Config, LocalPlayerAi
-from seekers.grpc import GrpcSeekersClient
+from seekers.grpc import GrpcSeekersClient, GrpcSeekersServiceWrapper
 
 
 class TestSeekers(unittest.TestCase):
@@ -53,12 +53,16 @@ class TestSeekers(unittest.TestCase):
 def start_grpc_client(filepath: str, address: str, joined_event: threading.Event):
     name, _ = os.path.splitext(filepath)
 
-    client = GrpcSeekersClient(
-        name=name,
-        player_ai=LocalPlayerAi.from_file(filepath),
+    service_wrapper = GrpcSeekersServiceWrapper(
         address=address
     )
-    client.join()
+
+    client = GrpcSeekersClient(
+        service_wrapper,
+        player_ai=LocalPlayerAi.from_file(filepath),
+        careful_mode=True
+    )
+    client.join(name=name)
     joined_event.set()
     client.run()
 
@@ -120,7 +124,6 @@ def nogrpc_game(playtime: int, speed: int, players: int, seed: int, filepaths: l
         print_scores=False
     )
 
-    game.listen()
     game.start()
 
     return {player.name: player.score for player in game.players.values()}
@@ -141,7 +144,7 @@ class TestGrpc(unittest.TestCase):
 
     def test_grpc_nogrpc_consistency(self):
         """Test that the outcome of a game is the same for grpc and nogrpc."""
-        for seed in 40, 41, 42, 43:
+        for seed in 40, 41, 42, 43, 44, 45:
             with self.subTest(msg=f"Seed: {seed}", seed=seed):
                 nogrpc_scores = nogrpc_game(
                     playtime=2000,
