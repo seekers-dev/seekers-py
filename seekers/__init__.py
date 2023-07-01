@@ -21,7 +21,7 @@ class SeekersGame:
     """A Seekers game. Manages the game logic, players, the gRPC server and graphics."""
 
     def __init__(self, local_ai_locations: typing.Iterable[str], config: Config,
-                 grpc_address: typing.Literal[False] | str = "localhost:7777", seed: float = 42,
+                 grpc_address: typing.Literal[False] | str = "localhost:7777",
                  debug: bool = True, print_scores: bool = True, dont_kill: bool = False):
         self._logger = logging.getLogger("SeekersGame")
 
@@ -29,7 +29,6 @@ class SeekersGame:
 
         self.config = config
         self.debug = debug
-        self.seed = seed
         self.do_print_scores = print_scores
         self.dont_kill = dont_kill
 
@@ -57,11 +56,11 @@ class SeekersGame:
 
     def start(self):
         """Start the game. Run the mainloop and block until the game is over."""
-        self._logger.info(f"Starting game. (Seed: {self.seed}, Players: {len(self.players)})")
+        self._logger.info(f"Starting game. (Seed: {self.config.global_seed}, Players: {len(self.players)})")
 
         self.clock = pygame.time.Clock()
 
-        random.seed(self.seed)
+        random.seed(self.config.global_seed)
 
         # initialize goals
         self.goals = [Goal.from_config(get_id("Goal"), self.world.random_position(), self.config) for _ in
@@ -88,7 +87,7 @@ class SeekersGame:
 
     def mainloop(self):
         """Start the game. Block until the game is over."""
-        random.seed(self.seed)
+        random.seed(self.config.global_seed)
         running = True
 
         while running:

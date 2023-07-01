@@ -33,6 +33,7 @@ class Config:
     """Configuration for the Seekers game."""
     global_wait_for_players: bool
     global_playtime: int
+    global_seed: int
     global_fps: int
     global_speed: int
     global_players: int
@@ -78,6 +79,7 @@ class Config:
         return cls(
             global_wait_for_players=cp.getboolean("global", "wait-for-players"),
             global_playtime=cp.getint("global", "playtime"),
+            global_seed=cp.getint("global", "seed"),
             global_fps=cp.getint("global", "fps"),
             global_speed=cp.getint("global", "speed"),
             global_players=cp.getint("global", "players"),
@@ -337,7 +339,7 @@ class Goal(Physical):
         Physical.__init__(self, *args, **kwargs)
 
         self.owner: "Player | None" = None
-        self.owned_for: int = 0
+        self.time_owned: int = 0
 
         self.scoring_time = scoring_time
 
@@ -359,11 +361,11 @@ class Goal(Physical):
         """Update the goal and return True if it has been captured."""
         if camp.contains(self.position):
             if self.owner == camp.owner:
-                self.owned_for += 1
+                self.time_owned += 1
             else:
-                self.owned_for = 0
+                self.time_owned = 0
                 self.owner = camp.owner
-            return self.owned_for >= self.scoring_time
+            return self.time_owned >= self.scoring_time
         else:
             return False
 
@@ -649,7 +651,7 @@ class LocalPlayer(Player):
             ai_goal.position = goal.position.copy()
             ai_goal.velocity = goal.velocity.copy()
             ai_goal.owner = self._ai_players[goal.owner.id] if goal.owner else None
-            ai_goal.owned_for = goal.owned_for
+            ai_goal.time_owned = goal.time_owned
 
         for player in players.values():
             for seeker_id, seeker in player.seekers.items():

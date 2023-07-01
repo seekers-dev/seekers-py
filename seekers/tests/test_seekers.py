@@ -18,7 +18,6 @@ class TestSeekers(unittest.TestCase):
             local_ai_locations=["examples/ai-magnets.py", "examples/ai-simple.py"],
             config=config,
             grpc_address=False,
-            seed=42,
             debug=False,
             print_scores=False
         )
@@ -76,12 +75,12 @@ def grpc_game(playtime: int, speed: int, players: int, seed: int, filepaths: lis
     config.global_speed = speed
     config.global_wait_for_players = True
     config.global_players = players
+    config.global_seed = seed
 
     game = SeekersGame(
         local_ai_locations=[],
         config=config,
         grpc_address=address,
-        seed=seed,
         debug=True,
         print_scores=False
     )
@@ -114,12 +113,12 @@ def nogrpc_game(playtime: int, speed: int, players: int, seed: int, filepaths: l
     config.global_playtime = playtime
     config.global_speed = speed
     config.global_players = players
+    config.global_seed = seed
 
     game = SeekersGame(
         local_ai_locations=filepaths,
         config=config,
         grpc_address=False,
-        seed=seed,
         debug=True,
         print_scores=False
     )

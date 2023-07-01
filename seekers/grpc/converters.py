@@ -71,7 +71,7 @@ def goal_to_seekers(goal: Goal, camps: dict[str, seekers.Camp], config: seekers.
         scoring_time=config.goal_scoring_time
     )
 
-    out.owned_for = goal.time_owned
+    out.time_owned = goal.time_owned
     if goal.camp_id in camps:
         out.owner = camps[goal.camp_id].owner
     else:
@@ -84,7 +84,7 @@ def goal_to_grpc(goal: seekers.Goal) -> Goal:
     return Goal(
         super=physical_to_grpc(goal),
         camp_id=goal.owner.camp.id if goal.owner else "",
-        time_owned=goal.owned_for
+        time_owned=goal.time_owned
     )
 
 
