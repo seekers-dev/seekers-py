@@ -83,7 +83,7 @@ def goal_to_seekers(goal: Goal, camps: dict[str, seekers.Camp], config: seekers.
 def goal_to_grpc(goal: seekers.Goal) -> Goal:
     return Goal(
         super=physical_to_grpc(goal),
-        camp_id=goal.owner.id if goal.owner else "",
+        camp_id=goal.owner.camp.id if goal.owner else "",
         time_owned=goal.owned_for
     )
 
