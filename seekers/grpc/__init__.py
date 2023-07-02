@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
 from grpc._channel import _InactiveRpcError
+
+from concurrent.futures import ThreadPoolExecutor
 from collections import defaultdict
 import time
 import logging
@@ -377,7 +378,7 @@ class GrpcSeekersServicer(SeekersServicer):
         return self.current_status
 
     def Command(self, request: CommandRequest, context: grpc.ServicerContext) -> CommandResponse | None:
-        self._logger.debug("Waiting for game start event.")
+        # self._logger.debug("Waiting for game start event.")
         self.game_start_event.wait()
 
         for command in request.commands:
