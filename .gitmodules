@@ -1,0 +1,3 @@
+[submodule "seekers/grpc/proto"]
+	path = seekers/grpc/proto
+	url = https://github.com/seekers-dev/seekers-grpc.git

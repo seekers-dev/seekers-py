@@ -131,7 +131,7 @@ class Config:
         elif type_ == "float":
             return float(value)
         elif type_ == "int":
-            return int(value)
+            return int(float(value))
         else:
             return value
 
@@ -156,6 +156,9 @@ class Config:
         for key, value in properties.items():
             # field.name-example -> field_name_example
             field_name = key.replace(".", "_").replace("-", "_")
+
+            if field_name not in all_kwargs:
+                continue
 
             # convert the value to the correct type
             kwargs[field_name] = cls._load_value(value, all_kwargs[field_name])
