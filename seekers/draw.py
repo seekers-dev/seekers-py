@@ -135,7 +135,11 @@ class GameRenderer:
 
         # draw goals
         for goal in goals:
-            self.draw_circle((205, 0, 250), goal.position, goal.radius)
+            color = (
+                interpolate_color((255, 255, 255), goal.owner.color, (goal.time_owned / goal.scoring_time)**2)
+                if goal.owner else (255, 255, 255)
+            )
+            self.draw_circle(color, goal.position, goal.radius)
 
         # draw jet streams
         for player in players:
