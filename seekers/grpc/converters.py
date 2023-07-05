@@ -1,46 +1,28 @@
-"""This file consist of a series of functions that convert between the gRPC types and the internal types."""
+"""Functions that convert between the gRPC types and the internal types."""
+from seekers.grpc.stubs.org.seekers.game.camp_pb2 import Camp
+from seekers.grpc.stubs.org.seekers.game.goal_pb2 import Goal
+from seekers.grpc.stubs.org.seekers.game.physical_pb2 import Physical
+from seekers.grpc.stubs.org.seekers.game.player_pb2 import Player
+from seekers.grpc.stubs.org.seekers.game.seeker_pb2 import Seeker
+from seekers.grpc.stubs.org.seekers.game.vector2d_pb2 import Vector2D
 
-try:
-    # noinspection PyPackageRequirements
-    from google._upb._message import MessageMeta
-except ImportError:
-    # google package is not explicitly required, it may not be installed
-    MessageMeta = type
-
-from seekers.grpc import seekers_pb2_grpc as pb2_grpc
-from seekers.grpc import types
 import seekers
 
-JoinRequest: MessageMeta = getattr(pb2_grpc.seekers__pb2, "JoinRequest")
-JoinReply: MessageMeta = getattr(pb2_grpc.seekers__pb2, "JoinReply")
-PropertiesRequest: MessageMeta = getattr(pb2_grpc.seekers__pb2, "PropertiesRequest")
-PropertiesReply: MessageMeta = getattr(pb2_grpc.seekers__pb2, "PropertiesReply")
-StatusRequest: MessageMeta = getattr(pb2_grpc.seekers__pb2, "StatusRequest")
-StatusReply: MessageMeta = getattr(pb2_grpc.seekers__pb2, "StatusReply")
-CommandRequest: MessageMeta = getattr(pb2_grpc.seekers__pb2, "CommandRequest")
-CommandReply: MessageMeta = getattr(pb2_grpc.seekers__pb2, "CommandReply")
-GoalStatus: MessageMeta = getattr(StatusReply, "Goal")
-PlayerStatus: MessageMeta = getattr(StatusReply, "Player")
-CampStatus: MessageMeta = getattr(StatusReply, "Camp")
-SeekerStatus: MessageMeta = getattr(StatusReply, "Seeker")
-PhysicalStatus: MessageMeta = getattr(StatusReply, "Physical")
-Vector: MessageMeta = getattr(pb2_grpc.seekers__pb2, "Vector")
 
-
-def convert_vector(vector: types.Vector) -> seekers.Vector:
+def vector_to_seekers(vector: Vector2D) -> seekers.Vector:
     return seekers.Vector(vector.x, vector.y)
 
 
-def convert_vector_back(vector: seekers.Vector) -> Vector:
-    return Vector(x=vector.x, y=vector.y)
+def vector_to_grpc(vector: seekers.Vector) -> Vector2D:
+    return Vector2D(x=vector.x, y=vector.y)
 
 
-def convert_seeker(seeker: types.SeekerStatus, owner: seekers.Player, config: seekers.Config) -> seekers.Seeker:
+def seeker_to_seekers(seeker: Seeker, owner: seekers.Player, config: seekers.Config) -> seekers.Seeker:
     out = seekers.Seeker(
         id_=seeker.super.id,
         owner=owner,
-        position=convert_vector(seeker.super.position),
-        velocity=convert_vector(seeker.super.velocity),
+        position=vector_to_seekers(seeker.super.position),
+        velocity=vector_to_seekers(seeker.super.velocity),
         mass=config.seeker_mass,
         radius=config.seeker_radius,
         friction=config.physical_friction,
@@ -51,36 +33,36 @@ def convert_seeker(seeker: types.SeekerStatus, owner: seekers.Player, config: se
     )
 
     out.magnet.strength = seeker.magnet
-    out.target = convert_vector(seeker.target)
+    out.target = vector_to_seekers(seeker.target)
     out.disable_counter = seeker.disable_counter
 
     return out
 
 
-def convert_physical_back(physical: seekers.Physical) -> PhysicalStatus:
-    return PhysicalStatus(
+def physical_to_grpc(physical: seekers.Physical) -> Physical:
+    return Physical(
         id=physical.id,
-        acceleration=convert_vector_back(physical.acceleration),
-        velocity=convert_vector_back(physical.velocity),
-        position=convert_vector_back(physical.position)
+        acceleration=vector_to_grpc(physical.acceleration),
+        velocity=vector_to_grpc(physical.velocity),
+        position=vector_to_grpc(physical.position)
     )
 
 
-def convert_seeker_back(seeker: seekers.Seeker) -> SeekerStatus:
-    return SeekerStatus(
-        super=convert_physical_back(seeker),
+def seeker_to_grpc(seeker: seekers.Seeker) -> Seeker:
+    return Seeker(
+        super=physical_to_grpc(seeker),
         player_id=seeker.owner.id,
         magnet=seeker.magnet.strength,
-        target=convert_vector_back(seeker.target),
+        target=vector_to_grpc(seeker.target),
         disable_counter=seeker.disabled_counter
     )
 
 
-def convert_goal(goal: types.GoalStatus, camps: dict[str, seekers.Camp], config: seekers.Config) -> seekers.Goal:
+def goal_to_seekers(goal: Goal, camps: dict[str, seekers.Camp], config: seekers.Config) -> seekers.Goal:
     out = seekers.Goal(
         id_=goal.super.id,
-        position=convert_vector(goal.super.position),
-        velocity=convert_vector(goal.super.velocity),
+        position=vector_to_seekers(goal.super.position),
+        velocity=vector_to_seekers(goal.super.velocity),
         mass=config.goal_mass,
         radius=config.goal_radius,
         friction=config.physical_friction,
@@ -98,50 +80,51 @@ def convert_goal(goal: types.GoalStatus, camps: dict[str, seekers.Camp], config:
     return out
 
 
-def convert_goal_back(goal: seekers.Goal) -> GoalStatus:
-    return GoalStatus(
-        super=convert_physical_back(goal),
-        camp_id=goal.owner.id if goal.owner else "",
+def goal_to_grpc(goal: seekers.Goal) -> Goal:
+    return Goal(
+        super=physical_to_grpc(goal),
+        camp_id=goal.owner.camp.id if goal.owner else "",
         time_owned=goal.time_owned
     )
 
 
-def convert_color(color: str) -> tuple[int, int, int]:
+def color_to_seekers(color: str) -> tuple[int, int, int]:
     # noinspection PyTypeChecker
     return tuple(int(color[i:i + 2], base=16) for i in (2, 4, 6))
 
 
-def convert_color_back(color: tuple[int, int, int]):
+def color_to_grpc(color: tuple[int, int, int]):
     return f"0x{color[0]:02x}{color[1]:02x}{color[2]:02x}"
 
 
-def convert_player(player: types.PlayerStatus) -> seekers.Player:
+def player_to_seekers(player: Player) -> seekers.Player:
     out = seekers.Player(
         id=player.id,
         name=player.name,
         score=player.score,
         seekers={}
     )
-    out.color = convert_color(player.color),
+    out.color = color_to_seekers(player.color),
 
     return out
 
 
-def convert_player_back(player: seekers.Player) -> PlayerStatus:
-    return PlayerStatus(
+def player_to_grpc(player: seekers.Player) -> Player:
+    return Player(
         id=player.id,
+        seeker_ids=[seeker.id for seeker in player.seekers.values()],
+        name=player.name,
         camp_id=player.camp.id,
-        color=convert_color_back(player.color),
+        color=color_to_grpc(player.color),
         score=player.score,
-        seeker_ids=[seeker.id for seeker in player.seekers.values()]
     )
 
 
-def convert_camp(camp: types.CampStatus, owner: seekers.Player) -> seekers.Camp:
+def camp_to_seekers(camp: Camp, owner: seekers.Player) -> seekers.Camp:
     out = seekers.Camp(
         id=camp.id,
         owner=owner,
-        position=convert_vector(camp.position),
+        position=vector_to_seekers(camp.position),
         width=camp.width,
         height=camp.height
     )
@@ -149,11 +132,11 @@ def convert_camp(camp: types.CampStatus, owner: seekers.Player) -> seekers.Camp:
     return out
 
 
-def convert_camp_back(camp: seekers.Camp) -> CampStatus:
-    return CampStatus(
+def camp_to_grpc(camp: seekers.Camp) -> Camp:
+    return Camp(
         id=camp.id,
         player_id=camp.owner.id,
-        position=convert_vector_back(camp.position),
+        position=vector_to_grpc(camp.position),
         width=camp.width,
         height=camp.height
     )
