@@ -805,7 +805,7 @@ class World:
         pos.y -= math.floor(pos.y / self.height) * self.height
 
     def normalized_position(self, pos: Vector):
-        tmp = pos
+        tmp = pos.copy()
         self.normalize_position(tmp)
         return tmp
 
