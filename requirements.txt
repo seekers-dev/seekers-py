@@ -1,5 +1,6 @@
 pygame>=2.1.0
 grpcio
 grpcio-tools
+mypy-protobuf
 protobuf
 protoletariat
