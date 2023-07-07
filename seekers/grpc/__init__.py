@@ -128,7 +128,7 @@ class GrpcSeekersClient:
             except GrpcSeekersClientError as e:
                 if self.careful_mode:
                     raise
-                self._logger.error(f"Error: {e}")
+                self._logger.critical(f"Error: {e}")
             except grpc._channel._InactiveRpcError as e:
                 if e.code() in [grpc.StatusCode.UNAVAILABLE, grpc.StatusCode.CANCELLED]:
                     # assume game has ended
@@ -142,7 +142,7 @@ class GrpcSeekersClient:
                 if self.careful_mode:
                     raise
 
-                self._logger.error(f"Assertion not met: {e.args[0]!r}")
+                self._logger.critical(f"Assertion not met: {e.args[0]!r}")
 
                 # for safety reset all caches
                 self._server_config = None
@@ -209,6 +209,8 @@ class GrpcSeekersClient:
         ])
 
     def update_state(self, status_reply: StatusResponse):
+        self.last_gametime = status_reply.passed_playtime
+
         if self.seekers is None:
             self.create_new_state(status_reply)
         else:
@@ -224,7 +226,7 @@ class GrpcSeekersClient:
                 seeker = self.seekers[new_seeker.super.id]
             except KeyError as e:
                 raise CouldNotUpdateExistingStateError(
-                    f"Invalid Response: Seeker ({new_seeker.super.id}) not in State.seekers."
+                    f"Invalid Response: Seeker ({new_seeker.super.id!r}) not in State.seekers. ({list(self.seekers)!r})"
                 ) from e
             else:
                 seeker.position = vector_to_seekers(new_seeker.super.position)
@@ -237,7 +239,7 @@ class GrpcSeekersClient:
                 player = self.players[new_player.id]
             except KeyError as e:
                 raise CouldNotUpdateExistingStateError(
-                    f"Invalid Response: Player ({new_player.id}) not in State.players."
+                    f"Invalid Response: Player ({new_player.id!r}) not in State.players. ({list(self.players)!r})"
                 ) from e
             else:
                 player.score = new_player.score
@@ -248,89 +250,52 @@ class GrpcSeekersClient:
                 goal = self.goals[new_goal.super.id]
             except KeyError as e:
                 raise CouldNotUpdateExistingStateError(
-                    f"Invalid Response: Goal ({new_goal.super.id}) not in State.goals."
+                    f"Invalid Response: Goal ({new_goal.super.id!r}) not in State.goals. ({list(self.goals)!r})"
                 ) from e
             else:
                 goal.position = vector_to_seekers(new_goal.super.position)
                 goal.velocity = vector_to_seekers(new_goal.super.velocity)
-                goal.scoring_time = new_goal.time_owned
-
+                goal.time_owned = new_goal.time_owned
                 goal.owner = self.camps[new_goal.camp_id].owner if new_goal.camp_id else None
 
         # camps assumed to be constant
 
     def create_new_state(self, status_reply: StatusResponse):
-        self.last_gametime = status_reply.passed_playtime
-
         config = self.get_config()
-        seekers_of_owner: dict[str, list[str]] = defaultdict(list)
 
-        # 1. convert seekers
+        camp_replies = {camp.id: camp for camp in status_reply.camps}
+        seeker_replies = {seeker.super.id: seeker for seeker in status_reply.seekers}
+
         self.seekers = {}
-        for new_seeker in status_reply.seekers:
-            # noinspection PyTypeChecker
-            self.seekers |= {
-                # owner of seeker intentionally left None, it will get set when the player is updated
-                new_seeker.super.id: seeker_to_seekers(new_seeker, None, config)
-            }
-
-            seekers_of_owner[new_seeker.player_id].append(new_seeker.super.id)
-
-        # 2. convert players
         self.players = {}
+        self.camps = {}
+
         for new_player in status_reply.players:
-            # The player's camp attribute is not set yet. This is done when converting the camps.
+            new_player: Player
             player = player_to_seekers(new_player)
 
-            # update seekers of player
             for seeker_id in new_player.seeker_ids:
-                if seeker_id not in self.seekers:
-                    raise GrpcSeekersClientError(
-                        f"Invalid response: Player {new_player.id!r} has seeker {seeker_id!r} "
-                        f"but it was not sent previously."
-                    )
+                seeker_data = seeker_replies[seeker_id]
 
-                seeker = player.seekers[seeker_id] = self.seekers[seeker_id]
-                seeker.owner = player
-
-            # the owner of a seeker might be specified in this field or the seekers of a player
-            # this means we have to check both places
-            # See https://github.com/seekers-dev/seekers-api/issues/25
-            for seeker_id in seekers_of_owner.get(new_player.id, []):
-                if None is not self.seekers[seeker_id].owner.id != new_player.id:
-                    self._logger.error(f"Inconsistent response: Player {new_player.id!r} has seeker {seeker_id!r} "
-                                       f"but it has owner {self.seekers[seeker_id].owner.id!r}.")
-
-                # this should never fail since we created the seekers in the previous loop
-                self.seekers[seeker_id].owner = player
+                player.seekers[seeker_id] = self.seekers[seeker_id] = seeker_to_seekers(seeker_data, player, config)
 
             self.players[new_player.id] = player
 
-        assert all(s.owner is not None for s in self.seekers.values()), \
-            GrpcSeekersClientError(
-                f"Invalid Response: Some seekers have no owner.\n"
-                f"Players: { {pl.id: [s.id for s in pl.seekers.values()] for pl in self.players.values()} }\n"
-                f"Seekers: { {seeker.id: seeker.owner for seeker in self.seekers.values()} }"
-            )
-
-        # 3. convert camps
-        self.camps = {}
-        for new_camp in status_reply.camps:
             try:
-                owner = self.players[new_camp.player_id]
+                self.camps[new_player.camp_id] = player.camp = camp_to_seekers(camp_replies[new_player.camp_id], player)
             except KeyError as e:
                 raise GrpcSeekersClientError(
-                    f"Invalid Response: Camp {new_camp.id!r} has invalid non-existing owner {new_camp.player_id!r}."
+                    f"Invalid Response: Player's camp {new_player.camp_id!r} not in State.camps. "
+                    f"({list(camp_replies)!r})."
                 ) from e
 
-            # set the player's camp attribute as stated above
-            self.camps[new_camp.id] = owner.camp = camp_to_seekers(new_camp, owner)
+        self.goals = {
+            goal.super.id: goal_to_seekers(goal, self.camps, config)
+            for goal in status_reply.goals
+        }
 
-        assert all(p.camp is not None for p in self.players.values()), \
-            GrpcSeekersClientError("Invalid Response: Some players have no camp.")
-
-        # 4. convert goals
-        self.goals = {g.super.id: goal_to_seekers(g, self.camps, config) for g in status_reply.goals}
+        self._logger.debug(f"Created {len(self.seekers)} seekers, {len(self.players)} players, "
+                           f"{len(self.camps)} camps, {len(self.goals)} goals.")
 
 
 class GrpcSeekersServicer(SeekersServicer):
@@ -353,6 +318,8 @@ class GrpcSeekersServicer(SeekersServicer):
 
         for event in self.new_status_events:
             event.set()
+
+        self.new_status_events.clear()
 
     def generate_status(self):
         players = [
