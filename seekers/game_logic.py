@@ -62,3 +62,5 @@ def goal_scored(player: Player, goal_index: int, goals: list[Goal], animations: 
     animations.append(ScoreAnimation(goal.position, player.color, goal.radius))
 
     goal.position = world.random_position()
+    goal.owner = None
+    goal.time_owned = 0
