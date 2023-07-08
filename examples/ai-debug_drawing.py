@@ -1,3 +1,4 @@
+#DOESN'T WORK WITH GRPC; REQUIRES DEBUG MODE
 from seekers import *
 from seekers.debug_drawing import *
 
