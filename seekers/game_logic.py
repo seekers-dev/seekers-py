@@ -24,10 +24,10 @@ def tick(players: typing.Iterable[Player], camps: list[Camp], goals: list[Goal],
     # handle collisions
     # noinspection PyTypeChecker
     physicals = seekers + goals
-    for phys1 in physicals:
-        for phys2 in physicals:
-            if phys1 is phys2:
-                continue
+    for i, phys1 in enumerate(physicals):
+        j = i + 1
+        while j < len(physicals):
+            phys2 = physicals[j]
 
             d = world.torus_difference(phys2.position, phys1.position).squared_length()
 
@@ -38,6 +38,8 @@ def tick(players: typing.Iterable[Player], camps: list[Camp], goals: list[Goal],
                     Seeker.collision(phys1, phys2, world)
                 else:
                     Physical.collision(phys1, phys2, world)
+
+            j += 1
 
     # handle goals and scoring
     for i, g in enumerate(goals):
