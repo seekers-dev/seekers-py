@@ -467,13 +467,13 @@ class Seeker(Physical):
         return self.magnet.is_on() and not self.is_disabled
 
     def collision(self, other: "Seeker", world: World):
+        if not (self.magnet_effective() or other.magnet_effective()):
+            self.disable()
+            other.disable()
+
         if self.magnet_effective():
             self.disable()
         if other.magnet_effective():
-            other.disable()
-
-        if not (self.magnet_effective() or other.magnet_effective()):
-            self.disable()
             other.disable()
 
         Physical.collision(self, other, world)
