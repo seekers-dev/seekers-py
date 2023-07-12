@@ -36,7 +36,7 @@ def main():
     parser.add_argument("-config", "-c", type=str, default="default_config.ini",
                         help="Path to the config file. (default: default_config.ini)")
     parser.add_argument("-config-override", "-co", action="append",
-                        help="Override a config option. Use the form option=value, e.g. global.seed=43")
+                        help="Override a config option. Use the form option=value, e.g. global.seed=43.")
     parser.add_argument("-loglevel", "-log", "-l", type=str, default="INFO",
                         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"])
     parser.add_argument("ai_files", type=str, nargs="*", help="Paths to the AIs.")
@@ -47,7 +47,7 @@ def main():
 
     config_dict = Config.from_filepath(args.config).to_properties() | parsed_config_overrides
     try:
-        config = Config.from_properties(config_dict)
+        config = Config.from_properties(config_dict, raise_key_error=True)
     except KeyError as e:
         raise ValueError(f"Invalid config option {e.args[0]!r}.") from e
 

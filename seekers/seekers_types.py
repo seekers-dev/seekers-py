@@ -146,7 +146,7 @@ class Config:
         return {convert_specifier(k): self._dump_value(v) for k, v in self_dict.items()}
 
     @classmethod
-    def from_properties(cls, properties: dict[str, str]) -> "Config":
+    def from_properties(cls, properties: dict[str, str], raise_key_error: bool = False) -> "Config":
         """Converts a dictionary of properties, as received by a gRPC client, to a Config object."""
         all_kwargs = {field.name: field.type for field in dataclasses.fields(Config) if field.init}
 
@@ -158,7 +158,10 @@ class Config:
             field_name = key.replace(".", "_").replace("-", "_")
 
             if field_name not in all_kwargs:
-                continue
+                if raise_key_error:
+                    raise KeyError(key)
+                else:
+                    continue
 
             # convert the value to the correct type
             kwargs[field_name] = cls._load_value(value, all_kwargs[field_name])
