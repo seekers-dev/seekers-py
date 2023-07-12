@@ -681,7 +681,7 @@ class LocalPlayer(Player):
         return (
             my_seekers, other_seekers, all_seekers,
             self._ai_goals,
-            list(self._ai_players.values()),
+            [player for player in self._ai_players.values() if player is not me],
             my_camp, camps,
             World(world.width, world.height),
             time
