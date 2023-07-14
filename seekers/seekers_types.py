@@ -579,6 +579,9 @@ class LocalPlayer(Player):
     _ai_goals: list[Goal] = dataclasses.field(init=False, default=None)
     _ai_players: dict[str, "Player"] = dataclasses.field(init=False, default=None)
 
+    def __post_init__(self):
+        self._logger = logging.getLogger(self.name)
+
     @property
     def preferred_color(self) -> Color | None:
         return self.ai.preferred_color
@@ -713,10 +716,20 @@ class LocalPlayer(Player):
                 raise InvalidAiOutputError(
                     f"AI output Seeker magnet must be a Magnet, not {type(ai_seeker.magnet)!r}.")
 
-            own_seeker.target.x = float(ai_seeker.target.x)
-            own_seeker.target.y = float(ai_seeker.target.y)
+            try:
+                own_seeker.target.x = float(ai_seeker.target.x)
+                own_seeker.target.y = float(ai_seeker.target.y)
+            except ValueError as e:
+                raise InvalidAiOutputError(
+                    f"AI output Seeker target Vector components must be numbers, not {ai_seeker.target!r}."
+                ) from e
 
-            own_seeker.magnet.strength = int(ai_seeker.magnet.strength)
+            try:
+                own_seeker.magnet.strength = float(ai_seeker.magnet.strength)
+            except ValueError as e:
+                raise InvalidAiOutputError(
+                    f"AI output Seeker magnet strength must be a float, not {ai_seeker.magnet.strength!r}."
+                ) from e
 
     def poll_ai(self, wait: bool, world: "World", goals: list[Goal], players: dict[str, "Player"],
                 time_: float, debug: bool):
@@ -724,9 +737,12 @@ class LocalPlayer(Player):
 
         ai_input = self.get_ai_input(world, goals, players, time_)
 
-        ai_output = self.call_ai(ai_input, debug)
+        try:
+            ai_output = self.call_ai(ai_input, debug)
 
-        self.process_ai_output(ai_output)
+            self.process_ai_output(ai_output)
+        except InvalidAiOutputError as e:
+            self._logger.error(f"AI {self.ai.filepath!r} output is invalid.", exc_info=e)
 
     @classmethod
     def from_file(cls, filepath: str) -> "LocalPlayer":
