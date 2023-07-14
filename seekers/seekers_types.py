@@ -59,8 +59,6 @@ class Config:
     goal_radius: float
     goal_mass: float
 
-    flags_experimental_friction: bool
-    flags_t_test: bool
     flags_relative_drawing_to: str
 
     @property
@@ -101,8 +99,6 @@ class Config:
             goal_radius=cp.getfloat("goal", "radius"),
             goal_mass=cp.getfloat("goal", "mass"),
 
-            flags_experimental_friction=cp.getboolean("flags", "experimental-friction"),
-            flags_t_test=cp.getboolean("flags", "t-test"),
             flags_relative_drawing_to=cp.get("flags", "relative-drawing-to"),
         )
 
@@ -237,6 +233,9 @@ class Vector:
     def length(self) -> float:
         return math.sqrt(self.x * self.x + self.y * self.y)
 
+    def norm(self):
+        return self.length()
+
     def normalized(self):
         norm = self.length()
         if norm == 0:
@@ -259,8 +258,7 @@ class Vector:
 
 class Physical:
     def __init__(self, id_: str, position: Vector, velocity: Vector,
-                 mass: float, radius: float, friction: float, base_thrust: float,
-                 experimental_friction: bool = False):
+                 mass: float, radius: float, friction: float, base_thrust: float):
         self.id = id_
 
         self.position = position
@@ -272,7 +270,6 @@ class Physical:
 
         self.friction = friction
         self.base_thrust = base_thrust
-        self.experimental_friction = experimental_friction
 
     def update_acceleration(self, world: "World"):
         """Update self.acceleration. Ideally, that is a unit vector. This is supposed to be overridden by subclasses."""
@@ -283,29 +280,12 @@ class Physical:
         return 1
 
     def move(self, world: "World"):
-        if self.experimental_friction:
-            vel_fact = (
-                math.sqrt(
-                    self.velocity.length() ** 2 - 2 * self.friction * self.velocity.length()
-                ) / self.velocity.length()
-
-                if (self.velocity.length() ** 2 - 2 * self.friction * self.velocity.length()) > 0
-                else 0
-            )
-
-            acc_fact = math.sqrt(
-                self.velocity.length() ** 2 + 2 * self.thrust()
-            ) - self.velocity.length()
-        else:
-            vel_fact = 1 - self.friction
-            acc_fact = self.thrust()
-
         # friction
-        self.velocity *= vel_fact
+        self.velocity *= 1 - self.friction
 
         # acceleration
         self.update_acceleration(world)
-        self.velocity += self.acceleration * acc_fact
+        self.velocity += self.acceleration * self.thrust()
 
         # displacement
         self.position += self.velocity
@@ -352,8 +332,7 @@ class Goal(Physical):
             mass=config.goal_mass,
             radius=config.goal_radius,
             friction=config.physical_friction,
-            base_thrust=config.seeker_thrust,
-            experimental_friction=config.flags_experimental_friction
+            base_thrust=config.seeker_thrust
         )
 
     def camp_tick(self, camp: "Camp") -> bool:
@@ -364,9 +343,8 @@ class Goal(Physical):
             else:
                 self.time_owned = 0
                 self.owner = camp.owner
-            return self.time_owned >= self.scoring_time
-        else:
-            return False
+
+        return self.time_owned >= self.scoring_time
 
 
 class Magnet:
@@ -421,8 +399,7 @@ class Seeker(Physical):
             mass=config.seeker_mass,
             radius=config.seeker_radius,
             friction=config.physical_friction,
-            base_thrust=config.seeker_thrust,
-            experimental_friction=config.flags_experimental_friction
+            base_thrust=config.seeker_thrust
         )
 
     @property

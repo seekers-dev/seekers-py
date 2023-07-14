@@ -15,7 +15,7 @@ class TestSeekers(unittest.TestCase):
         config.global_speed = 20
 
         game = SeekersGame(
-            local_ai_locations=["examples/ai-magnets.py", "examples/ai-simple.py"],
+            local_ai_locations=["examples/ai-decide.py", "examples/ai-simple.py"],
             config=config,
             grpc_address=False,
             debug=False,
@@ -37,7 +37,7 @@ class TestSeekers(unittest.TestCase):
                     speed=speed,
                     players=2,
                     seed=42,
-                    filepaths=["examples/ai-magnets.py", "examples/ai-simple.py"]
+                    filepaths=["examples/ai-decide.py", "examples/ai-simple.py"]
                 )
 
                 if scores is not None:
@@ -137,7 +137,7 @@ class TestGrpc(unittest.TestCase):
             speed=10,
             players=2,
             seed=42,
-            filepaths=["examples/ai-magnets.py", "examples/ai-simple.py"],
+            filepaths=["examples/ai-decide.py", "examples/ai-simple.py"],
             address="localhost:7778"
         )
 
@@ -150,7 +150,7 @@ class TestGrpc(unittest.TestCase):
                     speed=10,
                     players=2,
                     seed=seed,
-                    filepaths=["examples/ai-magnets.py", "examples/ai-simple.py"]
+                    filepaths=["examples/ai-decide.py", "examples/ai-simple.py"]
                 )
 
                 grpc_scores = grpc_game(
@@ -158,7 +158,7 @@ class TestGrpc(unittest.TestCase):
                     speed=10,
                     players=2,
                     seed=seed,
-                    filepaths=["examples/ai-magnets.py", "examples/ai-simple.py"],
+                    filepaths=["examples/ai-decide.py", "examples/ai-simple.py"],
                     address="localhost:7778"
                 )
 

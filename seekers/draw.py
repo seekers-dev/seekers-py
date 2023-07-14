@@ -198,25 +198,6 @@ class GameRenderer:
 
         self.draw_line((255, 255, 255), adjpos, adjpos + direction * length)
 
-    @staticmethod
-    def students_ttest(players: Collection[Player]) -> float:
-        if len(players) != 2:
-            raise ValueError("Students t-test only works with 2 players.")
-
-        players = iter(players)
-
-        score0 = next(players).score
-        score1 = next(players).score
-
-        if score0 == 0 or score1 == 0:
-            return float("nan")
-
-        # noinspection PyPackageRequirements
-        from scipy import stats
-
-        t, p = stats.ttest_1samp([1] * score0 + [0] * score1, 0.5)
-        return p
-
     def draw_information(self, players: Collection[Player], pos: Vector, clock: pygame.time.Clock):
         # draw fps
         fps = int(clock.get_fps())
@@ -229,16 +210,6 @@ class GameRenderer:
             self.draw_text(str(p.score), p.color, pos, center=False, relative=False)
             self.screen.blit(self.player_name_images[p.id], tuple(pos + dx))
             pos += dy
-
-        # draw student's t-test
-        if self.config.flags_t_test:
-            if len(players) == 2 and all(p.score > 0 for p in players):
-                p = self.students_ttest(players)
-                text = f"{p:.2e}"
-            else:
-                text = "N/A"
-
-            self.draw_text(f"T-Test: {text}", (255, 255, 255), pos, center=False)
 
     def parse_reference(self, players: Sequence[Player], goals: Sequence[Goal]) -> Callable[[], Vector]:
         parts = self.config.flags_relative_drawing_to.split("/")

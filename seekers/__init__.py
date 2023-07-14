@@ -195,10 +195,6 @@ class SeekersGame:
         for player in sorted(self.players.values(), key=lambda p: p.score, reverse=True):
             print(f"{player.score} P.:\t{player.name}")
 
-        if self.config.flags_t_test and len(self.players) == 2:
-            p = self.renderer.students_ttest(self.players.values())
-            print(f"T-Test (probability of null hypothesis): {p:.2e} ({p:.2%})")
-
     def get_new_player_color(self, player: Player) -> Color:
         old_colors = [p.color for p in self.players.values() if p.color is not None]
 
