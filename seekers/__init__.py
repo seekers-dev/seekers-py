@@ -97,7 +97,7 @@ class SeekersGame:
                     running = False
 
             # perform game logic
-            for _ in range(self.config.updates_per_frame):
+            for _ in range(self.config.global_speed):
                 # end game if tournament_length has been reached
                 if self.config.global_playtime and self.ticks >= self.config.global_playtime:
                     if self.dont_kill:

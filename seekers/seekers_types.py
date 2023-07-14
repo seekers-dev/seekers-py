@@ -64,10 +64,6 @@ class Config:
     flags_relative_drawing_to: str
 
     @property
-    def updates_per_frame(self):
-        return self.global_speed
-
-    @property
     def map_dimensions(self):
         return self.map_width, self.map_height
 
