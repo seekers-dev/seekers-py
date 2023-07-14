@@ -58,6 +58,7 @@ class Config:
     goal_scoring_time: int
     goal_radius: float
     goal_mass: float
+    goal_thrust: float
 
     flags_relative_drawing_to: str
 
@@ -98,6 +99,7 @@ class Config:
             goal_scoring_time=cp.getint("goal", "scoring-time"),
             goal_radius=cp.getfloat("goal", "radius"),
             goal_mass=cp.getfloat("goal", "mass"),
+            goal_thrust=cp.getfloat("goal", "thrust"),
 
             flags_relative_drawing_to=cp.get("flags", "relative-drawing-to"),
         )
@@ -258,7 +260,7 @@ class Vector:
 
 class Physical:
     def __init__(self, id_: str, position: Vector, velocity: Vector,
-                 mass: float, radius: float, friction: float, base_thrust: float):
+                 mass: float, radius: float, friction: float):
         self.id = id_
 
         self.position = position
@@ -269,7 +271,6 @@ class Physical:
         self.radius = radius
 
         self.friction = friction
-        self.base_thrust = base_thrust
 
     def update_acceleration(self, world: "World"):
         """Update self.acceleration. Ideally, that is a unit vector. This is supposed to be overridden by subclasses."""
@@ -314,25 +315,29 @@ class Physical:
 
 
 class Goal(Physical):
-    def __init__(self, scoring_time: float, *args, **kwargs):
+    def __init__(self, scoring_time: float, base_thrust: float, *args, **kwargs):
         Physical.__init__(self, *args, **kwargs)
 
         self.owner: "Player | None" = None
         self.time_owned: int = 0
 
         self.scoring_time = scoring_time
+        self.base_thrust = base_thrust
+
+    def thrust(self) -> float:
+        return self.base_thrust
 
     @classmethod
     def from_config(cls, id_: str, position: Vector, config: Config) -> Goal:
         return cls(
             scoring_time=config.goal_scoring_time,
+            base_thrust=config.goal_thrust,
             id_=id_,
             position=position,
             velocity=Vector(0, 0),
             mass=config.goal_mass,
             radius=config.goal_radius,
-            friction=config.physical_friction,
-            base_thrust=config.seeker_thrust
+            friction=config.physical_friction
         )
 
     def camp_tick(self, camp: "Camp") -> bool:
@@ -376,7 +381,8 @@ class Magnet:
 
 
 class Seeker(Physical):
-    def __init__(self, owner: Player, disabled_time: float, magnet_slowdown: float, *args, **kwargs):
+    def __init__(self, owner: Player, disabled_time: float, magnet_slowdown: float, base_thrust: float, *args,
+                 **kwargs):
         Physical.__init__(self, *args, **kwargs)
 
         self.target = self.position.copy()
@@ -386,6 +392,7 @@ class Seeker(Physical):
         self.owner = owner
         self.disabled_time = disabled_time
         self.magnet_slowdown = magnet_slowdown
+        self.base_thrust = base_thrust
 
     @classmethod
     def from_config(cls, owner: Player, id_: str, position: Vector, config: Config):
@@ -393,14 +400,19 @@ class Seeker(Physical):
             owner=owner,
             disabled_time=config.seeker_disabled_time,
             magnet_slowdown=config.seeker_magnet_slowdown,
+            base_thrust=config.seeker_thrust,
             id_=id_,
             position=position,
             velocity=Vector(),
             mass=config.seeker_mass,
             radius=config.seeker_radius,
             friction=config.physical_friction,
-            base_thrust=config.seeker_thrust
         )
+
+    def thrust(self) -> float:
+        magnet_slowdown_factor = self.magnet_slowdown if self.magnet.is_on() else 1
+
+        return self.base_thrust * magnet_slowdown_factor
 
     @property
     def is_disabled(self):
@@ -425,18 +437,13 @@ class Seeker(Physical):
         if self.is_disabled:
             return Vector(0, 0)
 
-        return - direction * (self.magnet.strength * bump(r * 10)) * self.base_thrust
+        return - direction * (self.magnet.strength * bump(r * 10))
 
     def update_acceleration(self, world: World):
         if self.disabled_counter == 0:
             self.acceleration = world.torus_direction(self.position, self.target)
         else:
             self.acceleration = Vector(0, 0)
-
-    def thrust(self) -> float:
-        magnet_slowdown_factor = self.magnet_slowdown if self.magnet.is_on() else 1
-
-        return self.base_thrust * magnet_slowdown_factor
 
     def magnet_effective(self):
         """Return whether the magnet is on and the seeker is not disabled."""
