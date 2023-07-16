@@ -19,7 +19,7 @@
      * useful for debugging/AI-developement
 
 ## How to run
-* Install python 3.10 or 3.9
+* Install python 3.9 or higher
 * Install the packages in [`requirements.txt`](requirements.txt).
   ```shell
   pip install -r requirements.txt
