@@ -32,15 +32,19 @@ class SeekersGame:
         self.do_print_scores = print_scores
         self.dont_kill = dont_kill
 
-        if not grpc_address:
-            self.grpc = None
-        else:
-            from .grpc import GrpcSeekersServer
-            self.grpc = GrpcSeekersServer(self, grpc_address)
-
         self.players = self.load_local_players(local_ai_locations)
         if self.players and not config.global_wait_for_players:
             self._logger.warning("Config option `global.wait-for-players=false` is not supported for local players.")
+
+        if grpc_address and len(self.players) < config.global_players:
+            try:
+                from .grpc import GrpcSeekersServer
+                self.grpc = GrpcSeekersServer(self, grpc_address)
+            except ImportError as e:
+                self._logger.warning("gRPC server could not be started. Import error.", exc_info=e)
+                self.grpc = None
+        else:
+            self.grpc = None
 
         self.world = World(*self.config.map_dimensions)
         self.goals = []
