@@ -24,6 +24,13 @@
   ```shell
   pip install -r requirements.txt
   ```
+  alternatively:
+  ```shell
+  python -m pip install-r requirements.txt
+  ```
+  depending on how you installed python you might have to use `py` or `python3` instead of python...
+
+* Download the necessary grpc stubs from [seekers-dev/seekers-grpc](https://github.com/seekers-dev/seekers-grpc/releases) and put the folder `./stubs/` in `./seekers/grpc/`.
 
 ### Run a Python Seekers Game (and a gRPC server)
 This will:
