@@ -1,0 +1,35 @@
+name: "pre-release"
+
+on:
+  push:
+    branches:
+      - "master"
+
+jobs:
+  pre-release:
+    name: "Pre Release"
+    runs-on: "ubuntu-latest"
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies to build gRPC stubs
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r seekers/grpc/requirements-dev.txt
+
+      - name: "Build gRPC stubs"
+        run: |
+          ./seekers/grpc/compile_protos.sh
+
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "latest"
+          prerelease: true
+          title: "Development Build"
