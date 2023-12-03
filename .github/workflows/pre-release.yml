@@ -25,7 +25,8 @@ jobs:
 
       - name: "Build gRPC stubs"
         run: |
-          bash seekers/grpc/compile_protos.sh
+          cd seekers/grpc
+          bash compile_protos.sh
 
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:

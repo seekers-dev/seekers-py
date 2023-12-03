@@ -1,4 +1,5 @@
 protoletariat
 mypy-protobuf
 grpclib
+grpcio-tools
 protobuf==4.23.2
