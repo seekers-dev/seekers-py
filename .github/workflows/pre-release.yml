@@ -28,6 +28,8 @@ jobs:
         run: |
           cd seekers/grpc
           bash compile_protos.sh
+          cd ../..
+          zip seekers.zip **/*
 
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
@@ -35,3 +37,5 @@ jobs:
           automatic_release_tag: "latest"
           prerelease: true
           title: "Development Build"
+          files: |
+            seekers.zip
