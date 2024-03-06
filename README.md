@@ -20,7 +20,7 @@
 
 ## This repository contains
 
-- 🎮 A classic python implementation of the seekers game (classic, unsave)
+- 🎮 A classic python implementation of the seekers game (classic, unsafe)
 - 🌐 A gRPC api server and client implementation (new, protected)
 
 Players can join the Seekers Game in two ways:
@@ -33,9 +33,12 @@ Players can join the Seekers Game in two ways:
 
 ### Installation
 
-* Download the latest release
-* Python 3.9 or higher is required
-* Install the packages in [`requirements.txt`](requirements.txt).
+* Python 3.9 or higher is required (make sure it's in your PATH)
+1. Download the latest release and unpack it.
+2. Install the packages in [`requirements.txt`](requirements.txt). 
+   - We recommend using a [virtual environment](https://docs.python.org/3/library/venv.html) (venv). Whenever opening a new terminal, you will have to activate the virtual environment again.
+   - To create: `python -m venv venv`
+   - To activate: `source venv/bin/activate` (Linux) or `venv\Scripts\activate` (Windows)
 
 ```shell
 python -m pip install -r requirements.txt
@@ -49,7 +52,7 @@ pip install -r requirements.txt
 
 Depending on how you installed python, you might have to use `py` or `python3` instead of `python`.
 
-* Download the necessary grpc stubs from [seekers-dev/seekers-grpc](https://github.com/seekers-dev/seekers-grpc/releases) and put the folder `./stubs/` in `./seekers/grpc/`.
+3. Done!
 
 ### Create server and run clients
 
@@ -70,12 +73,15 @@ python run_seekers.py <AI files>
 python run_client.py <AI file>
 ```
 
-## Build on your own
+## Development
+### Generating gRPC stubs 
+After cloning, you need to compile the gRPC stubs manually.
 
-You can compile the gRPC stubs manually
-
-* Install packages in [`seekers/grpc/requirements-dev.txt`](seekers/grpc/requirements-dev.txt). 
-* Execute [`seekers/grpc/compile_protos.sh`](seekers/grpc/compile_protos.sh).
+```shell
+cd seekers/grpc
+pip install -r requirements-dev.txt
+./compile_protos.sh
+```
 
 ## License
 
