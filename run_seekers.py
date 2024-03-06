@@ -43,6 +43,9 @@ def main():
 
     args = parser.parse_args()
 
+    if args.nogrpc and not args.ai_files:
+        raise ValueError("At least one AI file must be provided if gRPC is disabled.")
+
     parsed_config_overrides = parse_config_overrides(args.config_override or [])
 
     config_dict = Config.from_filepath(args.config).to_properties() | parsed_config_overrides
