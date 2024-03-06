@@ -1,5 +1,7 @@
 from seekers import *
 
+__color__ = (255, 0, 0)
+
 
 # function definition
 def foo(x):
