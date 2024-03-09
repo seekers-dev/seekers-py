@@ -202,26 +202,29 @@ class Vector:
     def __sub__(self, other: "Vector"):
         return Vector(self.x - other.x, self.y - other.y)
 
-    def __neg__(self):
-        return self * (-1)
+    def __mul__(self, factor: float):
+        return factor * self
 
-    def __mul__(self, factor: Vector | float):
+    def __rmul__(self, factor: float):
         if isinstance(factor, Vector):
-            return Vector(self.x * factor.x, self.y * factor.y)
+            return NotImplemented
+        else:
+            return Vector(factor * self.x, factor * self.y)
 
-        return Vector(self.x * factor, self.y * factor)
+    def __truediv__(self, divisor: float):
+        if isinstance(divisor, Vector):
+            return NotImplemented
+        else:
+            return Vector(self.x / divisor, self.y / divisor)
 
-    def __rmul__(self, other: Vector | float):
-        return self * other
+    def __rtruediv__(self, dividend: float):
+        if isinstance(dividend, Vector):
+            return NotImplemented
+        else:
+            return Vector(dividend / self.x, dividend / self.y)
 
-    def __truediv__(self, divisor: Vector | float):
-        return self * (1 / divisor)
-
-    def __rtruediv__(self, other: Vector | float):
-        if other == 1:
-            return Vector(1 / self.x, 1 / self.y)
-
-        return 1 / self * other
+    def __neg__(self):
+        return -1 * self
 
     def __bool__(self):
         return self.x or self.y
