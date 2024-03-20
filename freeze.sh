@@ -1,9 +1,9 @@
 #!/bin/bash
 
-echo "Hello from the Seekers Community! cx_Freeze helper 24.3.6"
+echo "Hello from the seekers community! cx_Freeze helper 24.3.15"
 
 usage() {
-  echo "Usage: $0 [-b] [-s]" 1>&2
+  echo "Usage: $0 [-b|-s]" 1>&2
 }
 
 build() {
