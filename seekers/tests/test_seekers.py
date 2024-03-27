@@ -9,7 +9,7 @@ from seekers.grpc import GrpcSeekersClient, GrpcSeekersServiceWrapper
 class TestSeekers(unittest.TestCase):
     def test_seekers(self):
         """Test that a SeekersGame can be created and run without errors."""
-        config = Config.from_filepath("default_config.ini")
+        config = Config.from_filepath("config.ini")
 
         config.global_playtime = 200
         config.global_speed = 20
@@ -68,7 +68,7 @@ def start_grpc_client(filepath: str, address: str, joined_event: threading.Event
 
 def grpc_game(playtime: int, speed: int, players: int, seed: int, filepaths: list[str],
               address: str = "localhost:7778") -> dict[str, int]:
-    config = Config.from_filepath("default_config.ini")
+    config = Config.from_filepath("config.ini")
 
     config.global_fps = 1000
     config.global_playtime = playtime
@@ -106,7 +106,7 @@ def grpc_game(playtime: int, speed: int, players: int, seed: int, filepaths: lis
 
 
 def nogrpc_game(playtime: int, speed: int, players: int, seed: int, filepaths: list[str]) -> dict[str, int]:
-    config = Config.from_filepath("default_config.ini")
+    config = Config.from_filepath("config.ini")
 
     config.global_fps = 1000
     config.global_wait_for_players = True
