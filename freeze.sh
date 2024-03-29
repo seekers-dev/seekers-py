@@ -10,7 +10,7 @@ build() {
   echo "Building projekt ..."
   pip install -r requirements.txt
   pip install cx_Freeze
-  cxfreeze -c run_seekers.py --target-dir dist --include-files default_config.ini
+  cxfreeze -c run_seekers.py --target-dir dist --include-files config.ini
 }
 
 start() {
