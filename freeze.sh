@@ -1,16 +1,24 @@
 #!/bin/bash
 
-echo "Hello from the seekers community! cx_Freeze helper 24.3.15"
+echo "Hello from the seekers community! cx_Freeze helper 24.4.9"
 
 usage() {
-  echo "Usage: $0 [-b|-s]" 1>&2
+  echo "Usage: $0 [-i|-s|-c|-t|-h]" 1>&2
 }
 
-build() {
-  echo "Building projekt ..."
-  pip install -r requirements.txt
+install_requirements() {
+  echo "Install requirements ..."
   pip install cx_Freeze
+}
+
+build_seekers() {
+  echo "Building seekers ..."
   cxfreeze -c run_seekers.py --target-dir dist --include-files config.ini
+}
+
+build_client() {
+  echo "Building client ..."
+  cxfreeze -c run_client.py --target-dir dist --include-files config.ini
 }
 
 start() {
@@ -19,12 +27,18 @@ start() {
 }
 
 [ $# -eq 0 ] && usage
-while getopts ":bs" arg; do
+while getopts ":isct" arg; do
     case $arg in
-        b)
-            build
+        i)
+            install_requirements
             ;;
         s)
+            build_seekers
+            ;;
+        c)
+            build_client
+            ;;
+        t)
             start
             ;;
         *)
