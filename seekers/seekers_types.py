@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import logging
 import os
+import textwrap
 import threading
 import configparser
 import math
@@ -524,9 +525,9 @@ class LocalPlayerAi:
     def load_module(filepath: str) -> tuple[DecideCallable, Color | None]:
         try:
             with open(filepath) as f:
-                code = f.readlines()
+                code = f.read()
 
-            if code[0].strip() == "#bot":
+            if code.strip().startswith("#bot"):
                 logging.info(f"AI {filepath!r} was loaded in compatibility mode. (#bot)")
                 # Wrap code inside a decide function (compatibility).
                 # The old function that did this was called 'mogrify'.
@@ -536,9 +537,7 @@ class LocalPlayerAi:
                     "passed_time):"
                 )
 
-                code.append("return seekers")
-
-                code = [func_header] + list(map(lambda line: "    " + line, code))
+                code = func_header + "\n" + textwrap.indent(code + "\nreturn seekers", " ")
 
             mod = compile("".join(code), filepath, "exec")
 
