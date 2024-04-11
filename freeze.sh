@@ -1,16 +1,16 @@
 #!/bin/bash
 
-echo "Hello from the Seekers Community! cx_Freeze helper 24.3.6"
+echo "Hello from the seekers community! cx_Freeze helper 24.3.15"
 
 usage() {
-  echo "Usage: $0 [-b] [-s]" 1>&2
+  echo "Usage: $0 [-b|-s]" 1>&2
 }
 
 build() {
   echo "Building projekt ..."
   pip install -r requirements.txt
   pip install cx_Freeze
-  cxfreeze -c run_seekers.py --target-dir dist --include-files default_config.ini
+  cxfreeze -c run_seekers.py --target-dir dist --include-files config.ini
 }
 
 start() {
