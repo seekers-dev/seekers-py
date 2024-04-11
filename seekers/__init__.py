@@ -95,6 +95,8 @@ class SeekersGame:
         running = True
 
         while running:
+            # self._logger.debug(f"Tick {self.ticks:_}")
+
             # handle pygame events
             for e in pygame.event.get():
                 if e.type == pygame.QUIT:
@@ -102,6 +104,9 @@ class SeekersGame:
 
             # perform game logic
             for _ in range(self.config.global_speed):
+                if self.grpc:
+                    self.grpc.new_tick()
+
                 # end game if tournament_length has been reached
                 if self.config.global_playtime and self.ticks >= self.config.global_playtime:
                     if self.dont_kill:
@@ -111,15 +116,13 @@ class SeekersGame:
                         break
 
                 for player in self.players.values():
+                    # self._logger.debug(f"Polling AI for player {player.name}")
                     player.poll_ai(self.config.global_wait_for_players, self.world, self.goals, self.players,
                                    self.ticks, self.debug)
 
                 game_logic.tick(self.players.values(), self.camps, self.goals, self.animations, self.world)
 
                 self.ticks += 1
-
-                if self.grpc:
-                    self.grpc.new_tick()
 
             # draw graphics
             self.renderer.draw(self.players.values(), self.camps, self.goals, self.animations, self.clock)
