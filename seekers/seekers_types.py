@@ -13,7 +13,26 @@ import random
 import typing
 from collections import defaultdict
 
-from . import Color
+from .colors import Color
+
+__all__ = [
+    "get_id",
+    "Config",
+    "Vector",
+    "Physical",
+    "Goal",
+    "Magnet",
+    "Seeker",
+    "AiInput",
+    "DecideCallable",
+    "Player",
+    "InvalidAiOutputError",
+    "LocalPlayerAi",
+    "LocalPlayer",
+    "GrpcClientPlayer",
+    "World",
+    "Camp",
+]
 
 _IDS = defaultdict(list)
 
@@ -742,7 +761,7 @@ class LocalPlayer(Player):
 
     def poll_ai(self, wait: bool, world: "World", goals: list[Goal], players: dict[str, "Player"],
                 time_: float, debug: bool):
-        # ignore wait flag, supporting it would be a lot of extra code
+        # ignore wait flag, supporting it would be a lot of extra code, instead always wait (blocking)
 
         ai_input = self.get_ai_input(world, goals, players, time_)
 

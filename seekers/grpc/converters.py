@@ -1,12 +1,12 @@
 """Functions that convert between the gRPC types and the internal types."""
-from seekers.grpc.stubs.org.seekers.game.camp_pb2 import Camp
-from seekers.grpc.stubs.org.seekers.game.goal_pb2 import Goal
-from seekers.grpc.stubs.org.seekers.game.physical_pb2 import Physical
-from seekers.grpc.stubs.org.seekers.game.player_pb2 import Player
-from seekers.grpc.stubs.org.seekers.game.seeker_pb2 import Seeker
-from seekers.grpc.stubs.org.seekers.game.vector2d_pb2 import Vector2D
+from .stubs.org.seekers.game.camp_pb2 import Camp
+from .stubs.org.seekers.game.goal_pb2 import Goal
+from .stubs.org.seekers.game.physical_pb2 import Physical
+from .stubs.org.seekers.game.player_pb2 import Player
+from .stubs.org.seekers.game.seeker_pb2 import Seeker
+from .stubs.org.seekers.game.vector2d_pb2 import Vector2D
 
-import seekers
+from .. import seekers_types as seekers
 
 
 def vector_to_seekers(vector: Vector2D) -> seekers.Vector:

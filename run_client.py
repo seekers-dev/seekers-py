@@ -3,7 +3,8 @@ import os
 import sys
 import logging
 
-import seekers.grpc
+import seekers.grpc.client
+import seekers.seekers_types
 
 
 def run_ai(args: argparse.Namespace):
@@ -14,17 +15,17 @@ def run_ai(args: argparse.Namespace):
         stream=sys.stdout, force=True
     )
 
-    ai = seekers.LocalPlayerAi.from_file(args.ai_file)
+    ai = seekers.seekers_types.LocalPlayerAi.from_file(args.ai_file)
 
-    service_wrapper = seekers.grpc.GrpcSeekersServiceWrapper(address=args.address)
-    client = seekers.grpc.GrpcSeekersClient(service_wrapper, ai, careful_mode=args.careful)
+    service_wrapper = seekers.grpc.client.GrpcSeekersServiceWrapper(address=args.address)
+    client = seekers.grpc.client.GrpcSeekersClient(service_wrapper, ai, careful_mode=args.careful)
 
     try:
         client.join(name=name, color=ai.preferred_color)
-    except seekers.grpc.ServerUnavailableError:
+    except seekers.grpc.client.ServerUnavailableError:
         logging.error(f"Server at {args.address!r} unavailable. "
                       f"Check that it's running and that the address is correct.")
-    except seekers.grpc.GameFullError:
+    except seekers.grpc.client.GameFullError:
         logging.error("Game already full.")
     else:
         logging.info(f"Joined game with id={client.player_id!r}.")
