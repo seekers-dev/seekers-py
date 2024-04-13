@@ -619,11 +619,7 @@ class LocalPlayer(Player):
         return self.ai.preferred_color
 
     def init_ai_state(self, goals: list[Goal], players: dict[str, "Player"]):
-        self._ai_goals = []
-        for goal in goals:
-            self._ai_goals.append(
-                copy.deepcopy(goal)
-            )
+        self._ai_goals = [copy.deepcopy(goal) for goal in goals]
 
         self._ai_players = {}
         self._ai_seekers = {}
@@ -690,8 +686,10 @@ class LocalPlayer(Player):
         camps = [p.camp for p in self._ai_players.values()]
 
         return (
-            my_seekers, other_seekers, all_seekers,
-            self._ai_goals,
+            my_seekers,
+            other_seekers,
+            all_seekers,
+            self._ai_goals.copy(),
             [player for player in self._ai_players.values() if player is not me],
             my_camp, camps,
             World(world.width, world.height),
