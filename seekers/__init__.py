@@ -84,10 +84,14 @@ class SeekersGame:
         # prepare graphics
         self.renderer.init(self.players.values(), self.goals)
 
-        if self.grpc:
-            self.grpc.start_game()
+        try:
+            if self.grpc:
+                self.grpc.start_game()
 
-        self.mainloop()
+            self.mainloop()
+        finally:
+            if self.grpc:
+                self.grpc.stop()
 
     def mainloop(self):
         """Start the game. Block until the game is over."""
@@ -133,9 +137,6 @@ class SeekersGame:
 
         if self.do_print_scores:
             self.print_scores()
-
-        if self.grpc:
-            self.grpc.stop()
 
         self.renderer.close()
 

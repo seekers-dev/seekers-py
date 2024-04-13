@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 from grpc._channel import _InactiveRpcError
 
 from concurrent.futures import ThreadPoolExecutor
@@ -445,7 +444,7 @@ class GrpcSeekersServer:
         self._logger = logging.getLogger(self.__class__.__name__)
         self.game_start_event = threading.Event()
 
-        self.server = grpc.server(ThreadPoolExecutor())
+        self.server = grpc.server(ThreadPoolExecutor(thread_name_prefix="GrpcSeekersServicer"))
         self.servicer = GrpcSeekersServicer(seekers_game, self.game_start_event)
         add_SeekersServicer_to_server(self.servicer, self.server)
 
@@ -466,6 +465,7 @@ class GrpcSeekersServer:
 
     def stop(self):
         self.server.stop(None)
+        self.new_tick()
 
     def new_tick(self):
         self.servicer.new_tick()
