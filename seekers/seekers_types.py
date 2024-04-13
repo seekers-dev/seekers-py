@@ -497,6 +497,10 @@ class Seeker(Physical):
     def set_magnet_disabled(self):
         self.magnet.disable()
 
+    @property
+    def max_speed(self):
+        return self.base_thrust / self.friction
+
 
 AiInput = tuple[
     list[Seeker], list[Seeker], list[Seeker], list[Goal], list["Player"], "Camp", list[
