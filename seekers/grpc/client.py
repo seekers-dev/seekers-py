@@ -124,21 +124,21 @@ class GrpcSeekersClient:
             except GrpcSeekersClientError as e:
                 if self.careful_mode:
                     raise
-                self._logger.critical(f"Error: {e}")
+                self._logger.critical(f"Error: {e}", exc_info=e)
             except grpc._channel._InactiveRpcError as e:
                 if e.code() in [grpc.StatusCode.UNAVAILABLE, grpc.StatusCode.CANCELLED]:
                     # assume game has ended
                     self._logger.info(f"Game ended. ({e})")
                     break
                 elif e.code() in [grpc.StatusCode.UNKNOWN] and not self.careful_mode:
-                    self._logger.error(f"Received status code UNKNOWN: {e}")
+                    self._logger.error(f"Received status code UNKNOWN: {e}", exc_info=e)
                 else:
                     raise GrpcSeekersClientError("gRPC request resulted in unhandled error.") from e
             except AssertionError as e:
                 if self.careful_mode:
                     raise
 
-                self._logger.critical(f"Assertion not met: {e.args[0]!r}")
+                self._logger.critical(f"Assertion not met: {e.args[0]!r}", exc_info=e)
 
                 # for safety reset all caches
                 self._server_config = None
