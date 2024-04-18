@@ -2,8 +2,10 @@ import os
 import threading
 import unittest
 
-from seekers import SeekersGame, Config, LocalPlayerAi
-from seekers.grpc import GrpcSeekersClient, GrpcSeekersServiceWrapper
+from seekers import Config
+from seekers.seekers_types import LocalPlayerAi
+from seekers.game import SeekersGame
+from seekers.grpc.client import GrpcSeekersServiceWrapper, GrpcSeekersClient
 
 
 class TestSeekers(unittest.TestCase):

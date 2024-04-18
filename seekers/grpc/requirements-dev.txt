@@ -1,5 +1,5 @@
-protoletariat
-mypy-protobuf
-grpclib
-grpcio-tools
+protoletariat==3.2.19
+mypy-protobuf==3.4.0
+grpclib==0.4.6
+grpcio-tools==1.59.3
 protobuf==4.23.2

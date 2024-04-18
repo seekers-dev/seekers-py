@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import logging
 import os
+import textwrap
 import threading
 import configparser
 import math
@@ -12,7 +13,26 @@ import random
 import typing
 from collections import defaultdict
 
-from . import Color
+from .colors import Color
+
+__all__ = [
+    "get_id",
+    "Config",
+    "Vector",
+    "Physical",
+    "Goal",
+    "Magnet",
+    "Seeker",
+    "AiInput",
+    "DecideCallable",
+    "Player",
+    "InvalidAiOutputError",
+    "LocalPlayerAi",
+    "LocalPlayer",
+    "GrpcClientPlayer",
+    "World",
+    "Camp",
+]
 
 _IDS = defaultdict(list)
 
@@ -202,26 +222,29 @@ class Vector:
     def __sub__(self, other: "Vector"):
         return Vector(self.x - other.x, self.y - other.y)
 
-    def __neg__(self):
-        return self * (-1)
+    def __mul__(self, factor: float):
+        return factor * self
 
-    def __mul__(self, factor: Vector | float):
+    def __rmul__(self, factor: float):
         if isinstance(factor, Vector):
-            return Vector(self.x * factor.x, self.y * factor.y)
+            return NotImplemented
+        else:
+            return Vector(factor * self.x, factor * self.y)
 
-        return Vector(self.x * factor, self.y * factor)
+    def __truediv__(self, divisor: float):
+        if isinstance(divisor, Vector):
+            return NotImplemented
+        else:
+            return Vector(self.x / divisor, self.y / divisor)
 
-    def __rmul__(self, other: Vector | float):
-        return self * other
+    def __rtruediv__(self, dividend: float):
+        if isinstance(dividend, Vector):
+            return NotImplemented
+        else:
+            return Vector(dividend / self.x, dividend / self.y)
 
-    def __truediv__(self, divisor: Vector | float):
-        return self * (1 / divisor)
-
-    def __rtruediv__(self, other: Vector | float):
-        if other == 1:
-            return Vector(1 / self.x, 1 / self.y)
-
-        return 1 / self * other
+    def __neg__(self):
+        return -1 * self
 
     def __bool__(self):
         return self.x or self.y
@@ -474,6 +497,10 @@ class Seeker(Physical):
     def set_magnet_disabled(self):
         self.magnet.disable()
 
+    @property
+    def max_speed(self):
+        return self.base_thrust / self.friction
+
 
 AiInput = tuple[
     list[Seeker], list[Seeker], list[Seeker], list[Goal], list["Player"], "Camp", list[
@@ -521,9 +548,9 @@ class LocalPlayerAi:
     def load_module(filepath: str) -> tuple[DecideCallable, Color | None]:
         try:
             with open(filepath) as f:
-                code = f.readlines()
+                code = f.read()
 
-            if code[0].strip() == "#bot":
+            if code.strip().startswith("#bot"):
                 logging.info(f"AI {filepath!r} was loaded in compatibility mode. (#bot)")
                 # Wrap code inside a decide function (compatibility).
                 # The old function that did this was called 'mogrify'.
@@ -533,9 +560,7 @@ class LocalPlayerAi:
                     "passed_time):"
                 )
 
-                code.append("return seekers")
-
-                code = [func_header] + list(map(lambda line: "    " + line, code))
+                code = func_header + "\n" + textwrap.indent(code + "\nreturn seekers", " ")
 
             mod = compile("".join(code), filepath, "exec")
 
@@ -594,11 +619,7 @@ class LocalPlayer(Player):
         return self.ai.preferred_color
 
     def init_ai_state(self, goals: list[Goal], players: dict[str, "Player"]):
-        self._ai_goals = []
-        for goal in goals:
-            self._ai_goals.append(
-                copy.deepcopy(goal)
-            )
+        self._ai_goals = [copy.deepcopy(goal) for goal in goals]
 
         self._ai_players = {}
         self._ai_seekers = {}
@@ -665,8 +686,10 @@ class LocalPlayer(Player):
         camps = [p.camp for p in self._ai_players.values()]
 
         return (
-            my_seekers, other_seekers, all_seekers,
-            self._ai_goals,
+            my_seekers,
+            other_seekers,
+            all_seekers,
+            self._ai_goals.copy(),
             [player for player in self._ai_players.values() if player is not me],
             my_camp, camps,
             World(world.width, world.height),
@@ -740,7 +763,7 @@ class LocalPlayer(Player):
 
     def poll_ai(self, wait: bool, world: "World", goals: list[Goal], players: dict[str, "Player"],
                 time_: float, debug: bool):
-        # ignore wait flag, supporting it would be a lot of extra code
+        # ignore wait flag, supporting it would be a lot of extra code, instead always wait (blocking)
 
         ai_input = self.get_ai_input(world, goals, players, time_)
 

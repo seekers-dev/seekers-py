@@ -1,7 +1,10 @@
-import pygame
-from typing import Iterable, Callable, Collection, Sequence
+import abc
+import typing
+import math
 
-from .colors import interpolate_color
+import pygame
+
+from .colors import *
 from .seekers_types import *
 
 
@@ -53,7 +56,7 @@ class GameRenderer:
 
         return pos + (self.world.middle() - self.reference())
 
-    def init(self, players: Iterable[Player], goals: list[Goal]):
+    def init(self, players: typing.Iterable[Player], goals: list[Goal]):
         pygame.init()
 
         for p in players:
@@ -72,7 +75,7 @@ class GameRenderer:
 
         self.reference = self.parse_reference(list(players), goals)
 
-    def draw_torus(self, func: Callable[[Vector], typing.Any], p1: Vector, p2: Vector):
+    def draw_torus(self, func: typing.Callable[[Vector], typing.Any], p1: Vector, p2: Vector):
         func(p1)
 
         if p2.x > self.config.map_width:
@@ -124,7 +127,7 @@ class GameRenderer:
             p1, p2
         )
 
-    def draw(self, players: Collection[Player], camps: Iterable[Camp], goals: Iterable[Goal],
+    def draw(self, players: typing.Collection[Player], camps: typing.Iterable[Camp], goals: typing.Iterable[Goal],
              animations: list[Animation], clock: pygame.time.Clock):
         # clear screen
         self.screen.fill(self.background_color)
@@ -136,7 +139,7 @@ class GameRenderer:
         # draw goals
         for goal in goals:
             color = (
-                interpolate_color((255, 255, 255), goal.owner.color, min(1, (goal.time_owned / goal.scoring_time) ** 2))
+                interpolate_color((255, 255, 255), goal.owner.color, min(1.0, (goal.time_owned / goal.scoring_time) ** 2))
                 if goal.owner else (255, 255, 255)
             )
             self.draw_circle(color, goal.position, goal.radius)
@@ -198,7 +201,7 @@ class GameRenderer:
 
         self.draw_line((255, 255, 255), adjpos, adjpos + direction * length)
 
-    def draw_information(self, players: Collection[Player], pos: Vector, clock: pygame.time.Clock):
+    def draw_information(self, players: typing.Collection[Player], pos: Vector, clock: pygame.time.Clock):
         # draw fps
         fps = int(clock.get_fps())
         self.draw_text(str(fps), (250, 250, 250), pos, center=False, relative=False)
@@ -211,7 +214,8 @@ class GameRenderer:
             self.screen.blit(self.player_name_images[p.id], tuple(pos + dx))
             pos += dy
 
-    def parse_reference(self, players: Sequence[Player], goals: Sequence[Goal]) -> Callable[[], Vector]:
+    def parse_reference(self, players: typing.Sequence[Player], goals: typing.Sequence[Goal]
+                        ) -> typing.Callable[[], Vector]:
         parts = self.config.flags_relative_drawing_to.split("/")
 
         start, *rest = parts

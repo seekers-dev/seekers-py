@@ -20,8 +20,8 @@
 
 ## This repository contains
 
-- 🎮 A classic python implementation of the seekers game (classic, unsafe)
-- 🌐 A gRPC api server and client implementation (new, protected)
+- 🎮 A classic Python implementation of the Seekers game
+- 🌐 A server and client implementation of the [Seekers gRPC API](https://github.com/seekers-dev/seekers-grpc)
 
 Players can join the Seekers Game in two ways:
 1. as gRPC clients (new and safe way)

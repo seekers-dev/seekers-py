@@ -2,6 +2,17 @@ import random
 import typing
 import colorsys
 
+__all__ = [
+    "Color",
+    "string_hash_hue",
+    "string_hash_color",
+    "interpolate_color",
+    "hue_distance",
+    "get_hue",
+    "from_hue",
+    "pick_new",
+]
+
 Color = typing.Union[tuple[int, int, int], list[int]]
 
 

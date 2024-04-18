@@ -1,14 +1,11 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import sys
 
-# needed for compatibility with python on android
-import pygame
-
-pygame.init()
-
 from seekers import *
+from seekers.game import SeekersGame
 
 
 def parse_config_overrides(overrides: list[str]) -> dict[str, str]:
