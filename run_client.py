@@ -2,7 +2,6 @@ import argparse
 import os
 import sys
 import logging
-
 import seekers.grpc.client
 import seekers.seekers_types
 
