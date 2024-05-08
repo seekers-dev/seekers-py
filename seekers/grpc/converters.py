@@ -1,10 +1,14 @@
 """Functions that convert between the gRPC types and the internal types."""
-from .stubs.org.seekers.game.camp_pb2 import Camp
-from .stubs.org.seekers.game.goal_pb2 import Goal
-from .stubs.org.seekers.game.physical_pb2 import Physical
-from .stubs.org.seekers.game.player_pb2 import Player
-from .stubs.org.seekers.game.seeker_pb2 import Seeker
-from .stubs.org.seekers.game.vector2d_pb2 import Vector2D
+import dataclasses
+from collections import defaultdict
+
+from .stubs.org.seekers.grpc.game.camp_pb2 import Camp
+from .stubs.org.seekers.grpc.game.goal_pb2 import Goal
+from .stubs.org.seekers.grpc.game.physical_pb2 import Physical
+from .stubs.org.seekers.grpc.game.player_pb2 import Player
+from .stubs.org.seekers.grpc.game.seeker_pb2 import Seeker
+from .stubs.org.seekers.grpc.game.vector2d_pb2 import Vector2D
+from .stubs.org.seekers.grpc.service.seekers_pb2 import Section
 
 from .. import seekers_types as seekers
 
@@ -98,11 +102,10 @@ def color_to_grpc(color: tuple[int, int, int]):
 def player_to_seekers(player: Player) -> seekers.Player:
     out = seekers.Player(
         id=player.id,
-        name=player.name,
+        name=str(player.id),
         score=player.score,
         seekers={}
     )
-    out.color = color_to_seekers(player.color),
 
     return out
 
@@ -111,9 +114,9 @@ def player_to_grpc(player: seekers.Player) -> Player:
     return Player(
         id=player.id,
         seeker_ids=[seeker.id for seeker in player.seekers.values()],
-        name=player.name,
+        # name=player.name,
         camp_id=player.camp.id,
-        color=color_to_grpc(player.color),
+        # color=color_to_grpc(player.color),
         score=player.score,
     )
 
@@ -138,3 +141,35 @@ def camp_to_grpc(camp: seekers.Camp) -> Camp:
         width=camp.width,
         height=camp.height
     )
+
+
+def config_to_grpc(config: seekers.Config) -> list[Section]:
+    out = defaultdict(dict)
+
+    for attribute_name, value in dataclasses.asdict(config).items():
+        section, key = config.get_section_and_key(attribute_name)
+
+        out[section][key] = config.value_to_str(value)
+
+    return [Section(name=section, entries=data) for section, data in out.items()]
+
+
+def config_to_seekers(config: list[Section], ignore_missing: bool = True) -> seekers.Config:
+    config_field_types = {field.name: field.type for field in dataclasses.fields(seekers.Config) if field.init}
+
+    all_fields_as_none = {k: None for k in config_field_types}
+
+    kwargs = {}
+    for section in config:
+        for key, value in section.entries.items():
+            field_name = seekers.Config.get_attribute_name(section.name, key)
+
+            if field_name not in config_field_types:
+                if ignore_missing:
+                    raise KeyError(section.name)
+                else:
+                    continue
+
+            kwargs[field_name] = seekers.Config.value_from_str(value, config_field_types[field_name])
+
+    return seekers.Config(**(all_fields_as_none | kwargs))

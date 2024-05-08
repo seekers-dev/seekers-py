@@ -130,7 +130,7 @@ class Config:
             return cls.from_file(f)
 
     @staticmethod
-    def _dump_value(value: typing.Any) -> str:
+    def value_to_str(value: bool | float | int | str) -> str:
         if isinstance(value, bool):
             return str(value).lower()
         elif isinstance(value, float):
@@ -139,7 +139,7 @@ class Config:
             return str(value)
 
     @staticmethod
-    def _load_value(value: str, type_: str):
+    def value_from_str(value: str, type_: typing.Literal["bool", "float", "int", "str"]) -> bool | float | int | str:
         if type_ == "bool":
             return value.lower() == "true"
         elif type_ == "float":
@@ -149,40 +149,28 @@ class Config:
         else:
             return value
 
-    def to_properties(self) -> dict[str, str]:
-        self_dict = dataclasses.asdict(self)
+    @staticmethod
+    def get_section_and_key(attribute_name: str) -> tuple[str, str]:
+        """Split an attribute name into the config header name and the key name."""
 
-        def convert_specifier(specifier: str) -> str:
-            specifier = specifier.replace("_", ".", 1)
-            specifier = specifier.replace("_", "-")
-            return specifier
+        section, key = attribute_name.split("_", 1)
 
-        return {convert_specifier(k): self._dump_value(v) for k, v in self_dict.items()}
+        return section, key.replace("_", "-")
+
+    @staticmethod
+    def get_attribute_name(section: str, key: str) -> str:
+        return f"{section}_{key.replace('-', '_')}"
 
     @classmethod
-    def from_properties(cls, properties: dict[str, str], raise_key_error: bool = False) -> "Config":
-        """Converts a dictionary of properties, as received by a gRPC client, to a Config object."""
-        all_kwargs = {field.name: field.type for field in dataclasses.fields(Config) if field.init}
+    def get_field_type(cls, field_name: str) -> typing.Literal["bool", "float", "int", "str"]:
+        field_types = {f.name: f.type for f in dataclasses.fields(cls)}
+        return field_types[field_name]
 
-        all_fields_as_none = {k: None for k in all_kwargs}
+    def import_option(self, section: str, key: str, value: str):
+        field_name = self.get_attribute_name(section, key)
+        field_type = self.get_field_type(field_name)
 
-        kwargs = {}
-        for key, value in properties.items():
-            # field.name-example -> field_name_example
-            field_name = key.replace(".", "_").replace("-", "_")
-
-            if field_name not in all_kwargs:
-                if raise_key_error:
-                    raise KeyError(key)
-                else:
-                    continue
-
-            # convert the value to the correct type
-            kwargs[field_name] = cls._load_value(value, all_kwargs[field_name])
-
-        kwargs = all_fields_as_none | kwargs
-
-        return cls(**kwargs)
+        setattr(self, field_name, self.value_from_str(value, field_type))
 
 
 class Vector:

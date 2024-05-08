@@ -6,8 +6,8 @@ import time
 from grpc._channel import _InactiveRpcError
 
 from .converters import *
-from .stubs.org.seekers.net.seekers_pb2 import *
-from .stubs.org.seekers.net.seekers_pb2_grpc import *
+from .stubs.org.seekers.grpc.service.seekers_pb2 import *
+from .stubs.org.seekers.grpc.service.seekers_pb2_grpc import *
 
 import seekers.colors
 
@@ -30,6 +30,7 @@ class GrpcSeekersServiceWrapper:
     def __init__(self, address: str = "localhost:7777"):
         self.name: str | None = None
         self.token: str | None = None
+        self.config: list[Section] | None = None
 
         self.channel = grpc.insecure_channel(address)
         self.stub = SeekersStub(self.channel)
@@ -50,8 +51,11 @@ class GrpcSeekersServiceWrapper:
         self._logger.info(f"Joining game as {name!r} with color {color!r}.")
 
         try:
-            reply = self.stub.Join(JoinRequest(details=dict(name=name, color=color_to_grpc(color))))
+            reply: JoinResponse = self.stub.Join(JoinRequest(name=name, color=color_to_grpc(color)))
+
             self.token = reply.token
+            self.config = reply.sections
+
             return reply.player_id
         except _InactiveRpcError as e:
             if e.code() in [grpc.StatusCode.UNAUTHENTICATED, grpc.StatusCode.INVALID_ARGUMENT]:
@@ -65,9 +69,6 @@ class GrpcSeekersServiceWrapper:
                     f"The server is unavailable. Is it running already?"
                 ) from e
             raise
-
-    def get_server_properties(self) -> dict[str, str]:
-        return self.stub.Properties(Empty()).entries
 
     def send_commands(self, commands: list[Command]) -> CommandResponse:
         if self.channel_connectivity_status != grpc.ChannelConnectivity.READY:
@@ -145,7 +146,7 @@ class GrpcSeekersClient:
 
     def get_config(self):
         if self._server_config is None:
-            self._server_config = seekers.Config.from_properties(self.service_wrapper.get_server_properties())
+            self._server_config = config_to_seekers(self.service_wrapper.config)
 
         return self._server_config
 

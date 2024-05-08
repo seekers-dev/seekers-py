@@ -43,13 +43,14 @@ def main():
     if args.nogrpc and not args.ai_files:
         raise ValueError("At least one AI file must be provided if gRPC is disabled.")
 
-    parsed_config_overrides = parse_config_overrides(args.config_override or [])
+    config = Config.from_filepath(args.config)
+    for option, value in parse_config_overrides(args.config_override or []).items():
+        section, key = option.split(".", maxsplit=1)
 
-    config_dict = Config.from_filepath(args.config).to_properties() | parsed_config_overrides
-    try:
-        config = Config.from_properties(config_dict, raise_key_error=True)
-    except KeyError as e:
-        raise ValueError(f"Invalid config option {e.args[0]!r}.") from e
+        try:
+            config.import_option(section, key, value)
+        except KeyError as e:
+            raise ValueError(f"Invalid config option {e.args[0]!r}.") from e
 
     logging.basicConfig(level=args.loglevel, style="{", format=f"[{{name}}] {{levelname}}: {{message}}",
                         stream=sys.stdout)

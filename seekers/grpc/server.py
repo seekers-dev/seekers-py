@@ -6,10 +6,9 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 
 from .converters import *
-from .stubs.org.seekers.net.seekers_pb2 import *
-from .stubs.org.seekers.net.seekers_pb2_grpc import *
+from .stubs.org.seekers.grpc.service.seekers_pb2 import *
+from .stubs.org.seekers.grpc.service.seekers_pb2_grpc import *
 
-from .. import colors
 from .. import game
 
 
@@ -24,9 +23,6 @@ class GrpcSeekersServicer(SeekersServicer):
         # the right thing here would be a Condition, but I found that too complicated
         self.next_game_tick_event = threading.Event()
         self.tokens: set[str] = set()
-
-    def Properties(self, request: Empty, context) -> PropertiesResponse:
-        return PropertiesResponse(entries=self.game.config.to_properties())
 
     def new_tick(self):
         """Invalidate the cached game status. Called by SeekersGame."""
@@ -91,7 +87,7 @@ class GrpcSeekersServicer(SeekersServicer):
                 self.generate_status()
             return self.current_status
 
-    def join_game(self, name: str, color: seekers.Color) -> tuple[str, str]:
+    def join_game(self, name: str, color: seekers.Color | None) -> tuple[str, str]:
         # add the player with a new name if the requested name is already taken
         _requested_name = name
         i = 2
@@ -117,41 +113,34 @@ class GrpcSeekersServicer(SeekersServicer):
         return new_token, player.id
 
     def Join(self, request: JoinRequest, context) -> JoinResponse | None:
-        self._logger.debug(f"Received JoinRequest: {request.details!r}")
+        self._logger.debug(f"Received JoinRequest: {request.name=} {request.color=}")
 
-        # validate requested name
-        try:
-            requested_name = request.details["name"].strip()
-        except KeyError:
-            context.abort(grpc.StatusCode.INVALID_ARGUMENT,
-                          "No 'name' key was provided in JoinRequest.details.")
-            return
+        if request.name is None:
+            requested_name = "Player"
+        else:
+            requested_name = request.name.strip()
 
-        if not requested_name:
-            context.abort(grpc.StatusCode.INVALID_ARGUMENT,
-                          f"Requested name must not be empty or only consist of whitespace.")
-            return
+            if not requested_name:
+                context.abort(grpc.StatusCode.INVALID_ARGUMENT,
+                              f"Requested name must not be empty or only consist of whitespace.")
+                return
 
-        color = (
-            colors.string_hash_color(requested_name)
-            if request.details.get("color") is None
-            else color_to_seekers(request.details["color"])
-        )
+        color = color_to_seekers(request.color) if request.color is not None else None
 
         # add player to game
         try:
             new_token, player_id = self.join_game(requested_name, color)
-        except seekers.game.GameFullError:
+        except game.GameFullError:
             context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED, "Game is full.")
             return
 
-        return JoinResponse(token=new_token, player_id=player_id)
+        return JoinResponse(token=new_token, player_id=player_id, sections=config_to_grpc(self.game.config))
 
 
 class GrpcSeekersServer:
     """A wrapper around the GrpcSeekersServicer that handles the gRPC server."""
 
-    def __init__(self, seekers_game: seekers.game.SeekersGame, address: str = "localhost:7777"):
+    def __init__(self, seekers_game: game.SeekersGame, address: str = "localhost:7777"):
         self._logger = logging.getLogger(self.__class__.__name__)
         self.game_start_event = threading.Event()
 
