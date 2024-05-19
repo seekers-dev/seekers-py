@@ -20,7 +20,7 @@ build_seekers() {
 
 build_client() {
   echo "Building client ..."
-  venv/bin/cxfreeze -c run_client.py --target-dir dist/client --include-files config.ini
+  venv/bin/cxfreeze -c run_client.py --target-dir dist/client
 }
 
 test() {
