@@ -214,6 +214,24 @@ class GameRenderer:
             self.screen.blit(self.player_name_images[p.id], tuple(pos + dx))
             pos += dy
 
+        players = list(players)
+
+        # this could be generalized to n players, but I was too lazy to rewrite
+        if len(players) == 2:
+
+            n = players[0].score + players[1].score
+            k = min(players[0].score, players[1].score)
+
+            if n < 1:
+                p = math.nan
+            elif 0 <= k - n/2 <= 1:
+                # below formula will count one case twice
+                p = 1
+            else:
+                p = 2 * sum(math.comb(n, x) * 0.5 ** n for x in range(0, k+1))
+
+            self.draw_text(f"p-Value = {p:%}", (255, 255, 255), pos, center=False, relative=False)
+
     def parse_reference(self, players: typing.Sequence[Player], goals: typing.Sequence[Goal]
                         ) -> typing.Callable[[], Vector]:
         parts = self.config.flags_relative_drawing_to.split("/")
