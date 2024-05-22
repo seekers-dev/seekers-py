@@ -29,7 +29,7 @@ def seeker_to_seekers(seeker: Seeker, owner: seekers.Player, config: seekers.Con
         velocity=vector_to_seekers(seeker.super.velocity),
         mass=config.seeker_mass,
         radius=config.seeker_radius,
-        friction=config.physical_friction,
+        friction=config.seeker_friction,
         base_thrust=config.seeker_thrust,
         disabled_time=config.seeker_disabled_time,
         magnet_slowdown=config.seeker_magnet_slowdown
@@ -68,7 +68,7 @@ def goal_to_seekers(goal: Goal, camps: dict[str, seekers.Camp], config: seekers.
         velocity=vector_to_seekers(goal.super.velocity),
         mass=config.goal_mass,
         radius=config.goal_radius,
-        friction=config.physical_friction,
+        friction=config.seeker_friction,
         base_thrust=config.seeker_thrust,
         scoring_time=config.goal_scoring_time
     )
