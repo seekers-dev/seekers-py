@@ -80,8 +80,6 @@ class Config:
     goal_thrust: float
     goal_friction: float
 
-    flags_relative_drawing_to: str
-
     @property
     def map_dimensions(self):
         return self.map_width, self.map_height
@@ -120,8 +118,6 @@ class Config:
             goal_mass=cp.getfloat("goal", "mass"),
             goal_thrust=cp.getfloat("goal", "thrust"),
             goal_friction=cp.getfloat("goal", "friction"),
-
-            flags_relative_drawing_to=cp.get("flags", "relative-drawing-to"),
         )
 
     @classmethod

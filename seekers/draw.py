@@ -48,13 +48,6 @@ class GameRenderer:
         self.debug_mode = debug_mode
 
         self.world = World(self.config.map_width, self.config.map_height)
-        self.reference = None
-
-    def relative_pos(self, pos: Vector):
-        if self.reference is None:
-            return pos
-
-        return pos + (self.world.middle() - self.reference())
 
     def init(self, players: typing.Iterable[Player], goals: list[Goal]):
         pygame.init()
@@ -73,8 +66,6 @@ class GameRenderer:
         self.screen = pygame.display.set_mode(self.config.map_dimensions)
         pygame.display.set_caption("Seekers")
 
-        self.reference = self.parse_reference(list(players), goals)
-
     def draw_torus(self, func: typing.Callable[[Vector], typing.Any], p1: Vector, p2: Vector):
         func(p1)
 
@@ -90,10 +81,7 @@ class GameRenderer:
         if p1.y < 0:
             func(p1 + Vector(0, self.config.map_height))
 
-    def draw_text(self, text: str, color: Color, pos: Vector, center=True, relative=True):
-        if relative:
-            pos = self.relative_pos(pos)
-
+    def draw_text(self, text: str, color: Color, pos: Vector, center=True):
         dx, dy = self.font.size(text)
         adj_pos = pos - Vector(dx, dy) / 2 if center else pos
         self.screen.blit(self.font.render(text, True, color), tuple(adj_pos))
@@ -101,7 +89,6 @@ class GameRenderer:
         # no torus drawing for text
 
     def draw_circle(self, color: Color, center: Vector, radius: float, width: int = 0):
-        center = self.relative_pos(center)
         r = Vector(radius, radius)
 
         self.draw_torus(
@@ -110,18 +97,12 @@ class GameRenderer:
         )
 
     def draw_line(self, color: Color, start: Vector, end: Vector, width: int = 1):
-        start = self.relative_pos(start)
-        end = self.relative_pos(end)
-        d = end - start
-
         self.draw_torus(
-            lambda pos: pygame.draw.line(self.screen, color, tuple(pos), tuple(pos + d), width),
+            lambda pos: pygame.draw.line(self.screen, color, tuple(start), tuple(end), width),
             start, end
         )
 
     def draw_rect(self, color: Color, p1: Vector, p2: Vector, width: int = 0):
-        p1, p2 = self.relative_pos(p1), self.relative_pos(p2)
-
         self.draw_torus(
             lambda pos: pygame.draw.rect(self.screen, color, pygame.Rect(tuple(pos), tuple(p2 - p1)), width),
             p1, p2
@@ -139,7 +120,8 @@ class GameRenderer:
         # draw goals
         for goal in goals:
             color = (
-                interpolate_color((255, 255, 255), goal.owner.color, min(1.0, (goal.time_owned / goal.scoring_time) ** 2))
+                interpolate_color((255, 255, 255), goal.owner.color,
+                                  min(1.0, (goal.time_owned / goal.scoring_time) ** 2))
                 if goal.owner else (255, 255, 255)
             )
             self.draw_circle(color, goal.position, goal.radius)
@@ -204,48 +186,15 @@ class GameRenderer:
     def draw_information(self, players: typing.Collection[Player], pos: Vector, clock: pygame.time.Clock):
         # draw fps
         fps = int(clock.get_fps())
-        self.draw_text(str(fps), (250, 250, 250), pos, center=False, relative=False)
+        self.draw_text(str(fps), (250, 250, 250), pos, center=False)
 
         dx = Vector(40, 0)
         dy = Vector(0, 30)
         pos += dy
         for p in players:
-            self.draw_text(str(p.score), p.color, pos, center=False, relative=False)
+            self.draw_text(str(p.score), p.color, pos, center=False)
             self.screen.blit(self.player_name_images[p.id], tuple(pos + dx))
             pos += dy
-
-    def parse_reference(self, players: typing.Sequence[Player], goals: typing.Sequence[Goal]
-                        ) -> typing.Callable[[], Vector]:
-        parts = self.config.flags_relative_drawing_to.split("/")
-
-        start, *rest = parts
-
-        if start == "center":
-            return lambda: self.world.middle()
-
-        elif start == "player":
-            try:
-                player_index, seeker_index = rest
-
-                player = players[int(player_index)]
-                seeker = list(player.seekers.values())[int(seeker_index)]
-            except (ValueError, IndexError) as e:
-                raise ValueError("Config: flags.relative-drawing-to: Invalid goal reference.") from e
-
-            return lambda: seeker.position
-
-        elif start == "goal":
-            try:
-                goal_index, = rest
-                goal = goals[int(goal_index)]
-            except (ValueError, IndexError) as e:
-                raise ValueError("Config: flags.relative-drawing-to: Invalid goal reference.") from e
-
-            return lambda: goal.position
-
-        raise ValueError(
-            f"Config: flags.relative-drawing-to: Invalid reference {self.config.flags_relative_drawing_to!r}."
-        )
 
     @staticmethod
     def close():
