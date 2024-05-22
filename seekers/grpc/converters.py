@@ -165,7 +165,7 @@ def config_to_seekers(config: list[Section], ignore_missing: bool = True) -> see
             field_name = seekers.Config.get_attribute_name(section.name, key)
 
             if field_name not in config_field_types:
-                if ignore_missing:
+                if not ignore_missing:
                     raise KeyError(section.name)
                 else:
                     continue
