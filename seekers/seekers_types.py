@@ -67,18 +67,18 @@ class Config:
     camp_width: int
     camp_height: int
 
-    physical_friction: float
-
     seeker_thrust: float
     seeker_magnet_slowdown: float
     seeker_disabled_time: int
     seeker_radius: float
     seeker_mass: float
+    seeker_friction: float
 
     goal_scoring_time: int
     goal_radius: float
     goal_mass: float
     goal_thrust: float
+    goal_friction: float
 
     flags_relative_drawing_to: str
 
@@ -108,18 +108,18 @@ class Config:
             camp_width=cp.getint("camp", "width"),
             camp_height=cp.getint("camp", "height"),
 
-            physical_friction=cp.getfloat("physical", "friction"),
-
             seeker_thrust=cp.getfloat("seeker", "thrust"),
             seeker_magnet_slowdown=cp.getfloat("seeker", "magnet-slowdown"),
             seeker_disabled_time=cp.getint("seeker", "disabled-time"),
             seeker_radius=cp.getfloat("seeker", "radius"),
             seeker_mass=cp.getfloat("seeker", "mass"),
+            seeker_friction=cp.getfloat("seeker", "friction"),
 
             goal_scoring_time=cp.getint("goal", "scoring-time"),
             goal_radius=cp.getfloat("goal", "radius"),
             goal_mass=cp.getfloat("goal", "mass"),
             goal_thrust=cp.getfloat("goal", "thrust"),
+            goal_friction=cp.getfloat("goal", "friction"),
 
             flags_relative_drawing_to=cp.get("flags", "relative-drawing-to"),
         )
@@ -348,7 +348,7 @@ class Goal(Physical):
             velocity=Vector(0, 0),
             mass=config.goal_mass,
             radius=config.goal_radius,
-            friction=config.physical_friction
+            friction=config.goal_friction
         )
 
     def camp_tick(self, camp: "Camp") -> bool:
@@ -417,7 +417,7 @@ class Seeker(Physical):
             velocity=Vector(),
             mass=config.seeker_mass,
             radius=config.seeker_radius,
-            friction=config.physical_friction,
+            friction=config.seeker_friction,
         )
 
     def thrust(self) -> float:
@@ -548,7 +548,9 @@ class LocalPlayerAi:
                     "passed_time):"
                 )
 
-                code = func_header + "\n" + textwrap.indent(code + "\nreturn seekers", " ")
+                fist_line, code = code.split("\n", 1)
+
+                code = func_header + fist_line + ";\n" + textwrap.indent(code + "\nreturn seekers", " ")
 
             mod = compile("".join(code), filepath, "exec")
 
