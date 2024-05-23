@@ -1,0 +1,13 @@
+@echo off
+echo Setting up virtual environment ...
+python -m venv venv
+
+echo Installing requirements ...
+.\venv\Scripts\pip install -r requirements.txt cx_Freeze
+
+echo Building binaries ...
+.\venv\Scripts\python setup.py build
+
+echo Compress artifacts ...
+for /d %%a in (build\*) do (powershell Compress-Archive ".\%%a\*" "seekers-bin.zip")
+echo Finished!

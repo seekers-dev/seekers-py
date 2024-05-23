@@ -6,8 +6,8 @@ on:
       - "master"
 
 jobs:
-  pre-release:
-    name: "Pre Release"
+  pre-release-linux:
+    name: "Pre Release Linux"
     runs-on: "ubuntu-latest"
 
     steps:
@@ -18,7 +18,7 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install dependencies to build gRPC stubs
+      - name: "Install requirements"
         run: |
           python -m pip install --upgrade pip
           pip install -r seekers/grpc/requirements-dev.txt
@@ -29,13 +29,62 @@ jobs:
           cd seekers/grpc
           bash compile_protos.sh
           cd ../..
+      
+      - name: "Create archives"
+        run: |
+          zip -r seekers-stubs.zip seekers/grpc/stubs
           zip -r seekers.zip *
+
+      - name: "Build binaries"
+        run: |
+          bash freeze.sh
 
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "latest"
+          automatic_release_tag: "latest-linux"
           prerelease: true
-          title: "Development Build"
+          title: "Pre Release Linux"
           files: |
-            seekers.zip
+            *.zip
+
+  pre-release-windows:
+    name: "Pre Release Windows"
+    runs-on: "windows-latest"
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.11"
+      
+      - name: "Install requirements"
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r .\seekers\grpc\requirements-dev.txt
+
+      - name: "Build gRPC stubs"
+        run: |
+          cd seekers\grpc
+          .\compile_protos.bat
+          cd ..\..
+          
+      - name: "Create archives"
+        run: |
+          powershell Compress-Archive ".\" "seekers.zip"
+          powershell Compress-Archive ".\seekers\grpc\stubs" "seekers-stubs.zip"
+
+      - name: "Build binaries"
+        run: |
+          .\freeze.bat
+
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "latest-windows"
+          prerelease: true
+          title: "Pre Release Windows"
+          files: |
+            *.zip
