@@ -40,7 +40,7 @@ def main():
     parser.add_argument("--careful", action="store_true", help="Enable careful mode for the gRPC clients. This will "
                                                                "raise an exception and stop the client when errors "
                                                                "occur that otherwise would be ignored.")
-    parser.add_argument("ai_file", type=str, help="Paths to the AIs.")
+    parser.add_argument("ai_file", type=str, help="Path to the AI.")
 
     run_ai(parser.parse_args())
 
