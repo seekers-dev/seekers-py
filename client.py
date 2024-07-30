@@ -33,9 +33,9 @@ def run_ai(args: argparse.Namespace):
 
 def main():
     parser = argparse.ArgumentParser(description='Run a Python Seekers AI as a gRPC client.')
-    parser.add_argument("-address", "-a", type=str, default="localhost:7777",
+    parser.add_argument("--address", "-a", type=str, default="localhost:7777",
                         help="Address of the Seekers game. (default: localhost:7777)")
-    parser.add_argument("-loglevel", "-log", "-l", type=str, default="INFO",
+    parser.add_argument("--loglevel", "--log", "-l", type=str, default="INFO",
                         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"])
     parser.add_argument("--careful", action="store_true", help="Enable careful mode for the gRPC clients. This will "
                                                                "raise an exception and stop the client when errors "
