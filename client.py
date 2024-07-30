@@ -3,7 +3,8 @@ import os
 import sys
 import logging
 import seekers.grpc.client
-import seekers.seekers_types
+
+from seekers.game.player import LocalPlayerAi
 
 
 def run_ai(args: argparse.Namespace):
@@ -14,7 +15,7 @@ def run_ai(args: argparse.Namespace):
         stream=sys.stdout, force=True
     )
 
-    ai = seekers.seekers_types.LocalPlayerAi.from_file(args.ai_file)
+    ai = LocalPlayerAi.from_file(args.ai_file)
 
     service_wrapper = seekers.grpc.client.GrpcSeekersServiceWrapper(address=args.address)
     client = seekers.grpc.client.GrpcSeekersClient(service_wrapper, ai, careful_mode=args.careful)

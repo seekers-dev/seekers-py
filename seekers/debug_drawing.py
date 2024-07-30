@@ -3,7 +3,7 @@ import dataclasses
 import typing
 from contextvars import ContextVar
 
-from .seekers_types import Vector
+from .vector import Vector
 from .draw import GameRenderer
 
 

@@ -4,8 +4,11 @@ import math
 
 import pygame
 
+from seekers import *
 from .colors import *
-from .seekers_types import *
+from player import Player
+from .seekers_types import Config
+from .player import LocalPlayer, GrpcClientPlayer
 
 
 class Animation(abc.ABC):

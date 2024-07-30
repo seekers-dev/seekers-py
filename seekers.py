@@ -5,7 +5,6 @@ import logging
 import sys
 
 from seekers import *
-from seekers.game import SeekersGame
 
 
 def parse_config_overrides(overrides: list[str]) -> dict[str, str]:

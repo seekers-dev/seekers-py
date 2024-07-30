@@ -9,10 +9,12 @@ import time
 import typing
 import pygame
 
-from .seekers_types import *
-from . import colors
-from . import draw
-from . import game_logic
+from seekers import *
+from seekers.seekers_types import Config, get_id
+from seekers.player import LocalPlayer
+from seekers import colors
+from seekers import draw
+from seekers.game import game_logic
 
 
 class GameFullError(Exception): ...
