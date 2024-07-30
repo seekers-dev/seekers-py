@@ -61,7 +61,7 @@ This will:
 * run a gRPC server by default
 
 ```shell
-python run_seekers.py <AI files>
+python seekers.py <AI files>
 ```
 
 
@@ -70,7 +70,7 @@ python run_seekers.py <AI files>
 ⚠ You will need a separate server running. This can be the server above, or, for example, [the Java implementation](https://github.com/seekers-dev/seekers-api).
 
 ```shell
-python run_client.py <AI file>
+python client.py <AI file>
 ```
 
 ## Development

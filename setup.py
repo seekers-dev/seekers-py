@@ -7,8 +7,8 @@ build_options = {'packages': [], 'excludes': [], 'include_files': [('config.ini'
 base = 'console'
 
 executables = [
-    Executable('run_seekers.py', base=base, target_name = 'run_seekers'),
-    Executable('run_client.py', base=base, target_name = 'run_client')
+    Executable('seekers.py', base=base, target_name = 'run_seekers'),
+    Executable('client.py', base=base, target_name = 'run_client')
 ]
 
 setup(name='compile_test',
