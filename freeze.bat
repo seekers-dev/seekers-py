@@ -9,5 +9,5 @@ echo Building binaries ...
 .\venv\Scripts\python setup.py build
 
 echo Compress artifacts ...
-for /d %%a in (build\*) do (powershell Compress-Archive ".\%%a\*" "seekers-bin.zip")
+for /d %%a in (build\*) do (powershell Compress-Archive ".\%%a\*" "seekers-win32-bin.zip")
 echo Finished!

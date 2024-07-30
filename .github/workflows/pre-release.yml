@@ -32,8 +32,8 @@ jobs:
       
       - name: "Create archives"
         run: |
-          zip -r seekers-stubs.zip seekers/grpc/stubs
-          zip -r seekers.zip *
+          zip -r seekers-linux-stubs.zip seekers/grpc/stubs
+          zip -r seekers-linux.zip *
 
       - name: "Build binaries"
         run: |
@@ -73,8 +73,8 @@ jobs:
           
       - name: "Create archives"
         run: |
-          powershell Compress-Archive ".\" "seekers.zip"
-          powershell Compress-Archive ".\seekers\grpc\stubs" "seekers-stubs.zip"
+          powershell Compress-Archive ".\" "seekers-win32.zip"
+          powershell Compress-Archive ".\seekers\grpc\stubs" "seekers-win32-stubs.zip"
 
       - name: "Build binaries"
         run: |
