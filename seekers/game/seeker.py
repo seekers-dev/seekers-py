@@ -79,8 +79,8 @@ class Seeker(Physical):
         return self.is_disabled
 
     def magnetic_force(self, world: World, pos: Vector) -> Vector:
-        def bump(r) -> float:
-            return math.exp(1 / (r ** 2 - 1)) if r < 1 else 0
+        def bump(difference) -> float:
+            return math.exp(1 / (difference ** 2 - 1)) if difference < 1 else 0
 
         torus_diff = world.torus_difference(self.position, pos)
         torus_diff_len = torus_diff.length()
@@ -131,4 +131,3 @@ class Seeker(Physical):
     @property
     def max_speed(self):
         return self.base_thrust / self.friction
-

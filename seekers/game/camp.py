@@ -6,7 +6,7 @@ from seekers.vector import Vector
 @dataclasses.dataclass
 class Camp:
     id: str
-    owner: "Player"
+    owner: object
     position: Vector
     width: float
     height: float

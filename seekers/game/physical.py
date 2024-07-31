@@ -56,4 +56,3 @@ class Physical:
         if ddn < min_dist:
             self.position += dn * (ddn - min_dist)
             other.position -= dn * (ddn - min_dist)
-

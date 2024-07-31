@@ -3,7 +3,7 @@ import threading
 import unittest
 
 from seekers import Config
-from seekers.seekers_types import LocalPlayerAi
+from seekers.game.player import LocalPlayerAi
 from seekers.game import SeekersGame
 from seekers.grpc.client import GrpcSeekersServiceWrapper, GrpcSeekersClient
 
@@ -34,7 +34,7 @@ class TestSeekers(unittest.TestCase):
 
         for speed in 1, 1, 10, 10, 20, 40:
             with self.subTest(msg=f"Speed: {speed}", speed=speed):
-                new_scores = nogrpc_game(
+                new_scores = no_grpc_game(
                     playtime=2000,
                     speed=speed,
                     players=2,
@@ -107,7 +107,7 @@ def grpc_game(playtime: int, speed: int, players: int, seed: int, filepaths: lis
     return {player.name: player.score for player in game.players.values()}
 
 
-def nogrpc_game(playtime: int, speed: int, players: int, seed: int, filepaths: list[str]) -> dict[str, int]:
+def no_grpc_game(playtime: int, speed: int, players: int, seed: int, filepaths: list[str]) -> dict[str, int]:
     config = Config.from_filepath("config.ini")
 
     config.global_fps = 1000
@@ -143,11 +143,11 @@ class TestGrpc(unittest.TestCase):
             address="localhost:7778"
         )
 
-    def test_grpc_nogrpc_consistency(self):
-        """Test that the outcome of a game is the same for grpc and nogrpc."""
+    def test_grpc_no_grpc_consistency(self):
+        """Test that the outcome of a game is the same for grpc and no grpc."""
         for seed in 40, 41, 42, 43, 44, 45:
             with self.subTest(msg=f"Seed: {seed}", seed=seed):
-                nogrpc_scores = nogrpc_game(
+                no_grpc_scores = no_grpc_game(
                     playtime=2000,
                     speed=10,
                     players=2,
@@ -164,7 +164,7 @@ class TestGrpc(unittest.TestCase):
                     address="localhost:7778"
                 )
 
-                self.assertEqual(grpc_scores, nogrpc_scores,
+                self.assertEqual(grpc_scores, no_grpc_scores,
                                  msg=f"Outcome of gRPC and non-gRPC games with seed {seed} is different.")
 
 

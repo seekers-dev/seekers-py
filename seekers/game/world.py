@@ -34,9 +34,9 @@ class World:
         return self.geometry / 2
 
     def torus_difference(self, left: Vector, right: Vector, /) -> Vector:
-        def diff1d(l, a, b):
+        def diff1d(length, a, b):
             delta = abs(a - b)
-            return b - a if delta < l - delta else a - b
+            return b - a if delta < length - delta else a - b
 
         return Vector(diff1d(self.width, left.x, right.x),
                       diff1d(self.height, left.y, right.y))

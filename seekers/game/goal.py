@@ -8,7 +8,7 @@ class Goal(Physical):
     def __init__(self, scoring_time: float, base_thrust: float, *args, **kwargs):
         Physical.__init__(self, *args, **kwargs)
 
-        self.owner: "Player | None" = None
+        self.owner = None
         self.time_owned: int = 0
 
         self.scoring_time = scoring_time
@@ -40,4 +40,3 @@ class Goal(Physical):
                 self.owner = camp.owner
 
         return self.time_owned >= self.scoring_time
-
