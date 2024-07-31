@@ -10,6 +10,8 @@ from .stubs.org.seekers.grpc.service.seekers_pb2 import *
 from .stubs.org.seekers.grpc.service.seekers_pb2_grpc import *
 
 from .. import game
+from seekers.game.player import GrpcClientPlayer
+from seekers.game.config import get_id
 
 
 class GrpcSeekersServicer(SeekersServicer):
@@ -57,7 +59,7 @@ class GrpcSeekersServicer(SeekersServicer):
 
             # check if seeker is owned by player
             # noinspection PyTypeChecker
-            if not isinstance(seeker.owner, seekers.GrpcClientPlayer) or seeker.owner.token != request.token:
+            if not isinstance(seeker.owner, GrpcClientPlayer) or seeker.owner.token != request.token:
                 context.abort(
                     grpc.StatusCode.PERMISSION_DENIED,
                     f"Seeker with id {command.seeker_id!r} (owner player id: {seeker.owner.id!r}) "
@@ -96,10 +98,10 @@ class GrpcSeekersServicer(SeekersServicer):
             i += 1
 
         # create new player
-        new_token = seekers.get_id("Token")
-        player = seekers.GrpcClientPlayer(
+        new_token = get_id("Token")
+        player = GrpcClientPlayer(
             token=new_token,
-            id=seekers.get_id("Player"),
+            id=get_id("Player"),
             name=_requested_name,
             score=0,
             seekers={},
