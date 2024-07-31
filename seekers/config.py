@@ -1,22 +1,12 @@
+from __future__ import annotations
+
 import configparser
 import dataclasses
 import typing
-import random
-import collections
 
-
-_IDS = collections.defaultdict(list)
-
-
-def get_id(obj: str):
-    rng = random.Random(obj)
-
-    while (id_ := rng.randint(0, 2 ** 32)) in _IDS[obj]:
-        ...
-
-    _IDS[obj].append(id_)
-
-    return f"py-seekers.{obj}@{id_}"
+__all__ = [
+    "Config",
+]
 
 
 @dataclasses.dataclass
@@ -138,4 +128,3 @@ class Config:
         field_type = self.get_field_type(field_name)
 
         setattr(self, field_name, self.value_from_str(value, field_type))
-

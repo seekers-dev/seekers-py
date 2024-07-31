@@ -1,16 +1,24 @@
+from __future__ import annotations
+
 import abc
 import dataclasses
 import typing
 from contextvars import ContextVar
 
-from seekers.vector import Vector
-from .draw import GameRenderer
+from .vector import *
+from . import draw
+
+__all__ = [
+    "draw_text",
+    "draw_line",
+    "draw_circle",
+]
 
 
 @dataclasses.dataclass
 class DebugDrawing(abc.ABC):
     @abc.abstractmethod
-    def draw(self, game_renderer: GameRenderer):
+    def draw(self, game_renderer: draw.GameRenderer):
         ...
 
 
@@ -21,7 +29,7 @@ class TextDebugDrawing(DebugDrawing):
     color: tuple[int, int, int] = (255, 255, 255)
     center: bool = True
 
-    def draw(self, game_renderer: GameRenderer):
+    def draw(self, game_renderer: draw.GameRenderer):
         # draw the text centered at the position
         game_renderer.draw_text(self.text, self.color, self.position, center=self.center)
 
@@ -33,7 +41,7 @@ class LineDebugDrawing(DebugDrawing):
     color: tuple[int, int, int] = (255, 255, 255)
     width: int = 2
 
-    def draw(self, game_renderer: GameRenderer):
+    def draw(self, game_renderer: draw.GameRenderer):
         game_renderer.draw_line(self.color, self.start, self.end, self.width)
 
 
@@ -44,7 +52,7 @@ class CircleDebugDrawing(DebugDrawing):
     color: tuple[int, int, int] = (255, 255, 255)
     width: int = 2
 
-    def draw(self, game_renderer: GameRenderer):
+    def draw(self, game_renderer: draw.GameRenderer):
         game_renderer.draw_circle(self.color, self.position, self.radius, self.width)
 
 
@@ -60,5 +68,6 @@ def draw_circle(position: Vector, radius: float, color: tuple[int, int, int] = (
     add_debug_drawing_func_ctxtvar.get()(CircleDebugDrawing(position, radius, color, width))
 
 
-add_debug_drawing_func_ctxtvar: \
-    ContextVar[typing.Callable[[DebugDrawing], None]] = ContextVar("add_debug_drawing_func", default=lambda _: None)
+add_debug_drawing_func_ctxtvar: ContextVar[typing.Callable[[DebugDrawing], None]] = (
+    ContextVar("add_debug_drawing_func", default=lambda _: None)
+)

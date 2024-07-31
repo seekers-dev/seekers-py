@@ -1,12 +1,20 @@
+from __future__ import annotations
+
 import dataclasses
 
-from seekers.vector import Vector
+from .vector import *
+from . import player
+
+
+__all__ = [
+    "Camp"
+]
 
 
 @dataclasses.dataclass
 class Camp:
     id: str
-    owner: object
+    owner: player.Player
     position: Vector
     width: float
     height: float

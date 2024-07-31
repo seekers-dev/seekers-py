@@ -1,9 +1,18 @@
+from __future__ import annotations
+
 import math
 
-from .config import Config
-from seekers.vector import Vector
-from .physical import Physical
-from .world import World
+from .config import *
+from .vector import *
+from . import (
+    physical,
+    world,
+)
+
+__all__ = [
+    "Magnet",
+    "Seeker",
+]
 
 
 class Magnet:
@@ -34,10 +43,10 @@ class Magnet:
         self.strength = 0
 
 
-class Seeker(Physical):
+class Seeker(physical.Physical):
     def __init__(self, owner, disabled_time: float, magnet_slowdown: float, base_thrust: float, *args,
                  **kwargs):
-        Physical.__init__(self, *args, **kwargs)
+        physical.Physical.__init__(self, *args, **kwargs)
 
         self.target = self.position.copy()
         self.disabled_counter = 0
@@ -78,14 +87,14 @@ class Seeker(Physical):
     def disabled(self):
         return self.is_disabled
 
-    def magnetic_force(self, world: World, pos: Vector) -> Vector:
+    def magnetic_force(self, world_: world.World, pos: Vector) -> Vector:
         def bump(difference) -> float:
             return math.exp(1 / (difference ** 2 - 1)) if difference < 1 else 0
 
-        torus_diff = world.torus_difference(self.position, pos)
+        torus_diff = world_.torus_difference(self.position, pos)
         torus_diff_len = torus_diff.length()
 
-        r = torus_diff_len / world.diameter()
+        r = torus_diff_len / world_.diameter()
         direction = (torus_diff / torus_diff_len) if torus_diff_len != 0 else Vector(0, 0)
 
         if self.is_disabled:
@@ -93,9 +102,9 @@ class Seeker(Physical):
 
         return - direction * (self.magnet.strength * bump(r * 10))
 
-    def update_acceleration(self, world: World):
+    def update_acceleration(self, world_: world.World):
         if self.disabled_counter == 0:
-            self.acceleration = world.torus_direction(self.position, self.target)
+            self.acceleration = world_.torus_direction(self.position, self.target)
         else:
             self.acceleration = Vector(0, 0)
 
@@ -103,7 +112,7 @@ class Seeker(Physical):
         """Return whether the magnet is on and the seeker is not disabled."""
         return self.magnet.is_on() and not self.is_disabled
 
-    def collision(self, other: "Seeker", world: World):
+    def collision(self, other: "Seeker", world_: world.World):
         if not (self.magnet_effective() or other.magnet_effective()):
             self.disable()
             other.disable()
@@ -113,7 +122,7 @@ class Seeker(Physical):
         if other.magnet_effective():
             other.disable()
 
-        Physical.collision(self, other, world)
+        physical.Physical.collision(self, other, world_)
 
     # methods below are left in for compatibility
     def set_magnet_repulsive(self):

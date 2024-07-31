@@ -7,16 +7,25 @@ import os
 import random
 import time
 import typing
+
 import pygame
 
-from .game_logic import tick
-from .config import Config, get_id
-from .seeker import Seeker
-from .goal import Goal
-from .world import World
-from .player import Player, LocalPlayer
-from seekers import colors
-from seekers import draw
+from .config import *
+from .ids import *
+from . import (
+    world,
+    draw,
+    seeker,
+    player,
+    goal,
+    game_logic,
+    colors
+)
+
+__all__ = [
+    "SeekersGame",
+    "GameFullError"
+]
 
 
 class GameFullError(Exception):
@@ -52,7 +61,7 @@ class SeekersGame:
         else:
             self.grpc = None
 
-        self.world = World(*self.config.map_dimensions)
+        self.world = world.World(*self.config.map_dimensions)
         self.goals = []
         self.camps = []
 
@@ -74,13 +83,13 @@ class SeekersGame:
         random.seed(self.config.global_seed)
 
         # initialize goals
-        self.goals = [Goal.from_config(get_id("Goal"), self.world.random_position(), self.config) for _ in
+        self.goals = [goal.Goal.from_config(get_id("Goal"), self.world.random_position(), self.config) for _ in
                       range(self.config.global_goals)]
 
         # initialize players
         for p in self.players.values():
             p.seekers = {
-                (id_ := get_id("Seeker")): Seeker.from_config(p, id_, self.world.random_position(), self.config)
+                (id_ := get_id("Seeker")): seeker.Seeker.from_config(p, id_, self.world.random_position(), self.config)
                 for _ in range(self.config.global_seekers)
             }
             p.color = self.get_new_player_color(p)
@@ -89,7 +98,7 @@ class SeekersGame:
         self.camps = self.world.generate_camps(self.players.values(), self.config)
 
         # prepare graphics
-        self.renderer.init(self.players.values(), self.goals)
+        self.renderer.init(self.players.values())
 
         try:
             if self.grpc:
@@ -126,12 +135,12 @@ class SeekersGame:
                         running = False
                         break
 
-                for player in self.players.values():
+                for player_ in self.players.values():
                     # self._logger.debug(f"Polling AI for player {player.name}")
-                    player.poll_ai(self.config.global_wait_for_players, self.world, self.goals, self.players,
-                                   self.ticks, self.debug)
+                    player_.poll_ai(self.config.global_wait_for_players, self.world, self.goals, self.players,
+                                    self.ticks, self.debug)
 
-                tick(self.players.values(), self.camps, self.goals, self.animations, self.world)
+                game_logic.tick(self.players.values(), self.camps, self.goals, self.animations, self.world)
 
                 self.ticks += 1
 
@@ -175,24 +184,24 @@ class SeekersGame:
             wait_for_players()
 
     @staticmethod
-    def load_local_players(ai_locations: typing.Iterable[str]) -> dict[str, Player]:
+    def load_local_players(ai_locations: typing.Iterable[str]) -> dict[str, player.Player]:
         """Return the players found in the given directories or files."""
-        out: dict[str, Player] = {}
+        out: dict[str, player.Player] = {}
 
         for location in ai_locations:
             if os.path.isdir(location):
                 for filename in glob.glob(os.path.join(location, "ai*.py")):
-                    player = LocalPlayer.from_file(filename)
-                    out |= {player.id: player}
+                    player_ = player.LocalPlayer.from_file(filename)
+                    out |= {player_.id: player_}
             elif os.path.isfile(location):
-                player = LocalPlayer.from_file(location)
-                out |= {player.id: player}
+                player_ = player.LocalPlayer.from_file(location)
+                out |= {player_.id: player_}
             else:
                 raise Exception(f"Invalid AI location: {location!r} is neither a file nor a directory.")
 
         return out
 
-    def add_player(self, player: Player):
+    def add_player(self, player_: player.Player):
         """Add a player to the game while it is not running yet and raise a GameFullError if the game is full.
         This function is used by the gRPC server."""
 
@@ -204,21 +213,21 @@ class SeekersGame:
                 f"Game full. Cannot add more players. Max player count is {self.config.global_players}."
             )
 
-        self.players |= {player.id: player}
+        self.players |= {player_.id: player_}
 
     def print_scores(self):
-        for player in sorted(self.players.values(), key=lambda p: p.score, reverse=True):
-            print(f"{player.score} P.:\t{player.name}")
+        for player_ in sorted(self.players.values(), key=lambda p: p.score, reverse=True):
+            print(f"{player_.score} P.:\t{player_.name}")
 
-    def get_new_player_color(self, player: Player) -> colors.Color:
+    def get_new_player_color(self, player_: player.Player) -> colors.Color:
         old_colors = [p.color for p in self.players.values() if p.color is not None]
 
         preferred = (
-            colors.string_hash_color(player.name) if player.preferred_color is None else player.preferred_color
+            colors.string_hash_color(player_.name) if player_.preferred_color is None else player_.preferred_color
         )
 
         return colors.pick_new(old_colors, preferred, threshold=self.config.global_color_threshold)
 
     @property
-    def seekers(self) -> collections.ChainMap[str, Seeker]:
+    def seekers(self) -> collections.ChainMap[str, seeker.Seeker]:
         return collections.ChainMap(*(p.seekers for p in self.players.values()))

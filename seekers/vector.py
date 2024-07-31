@@ -1,5 +1,12 @@
+from __future__ import annotations
+
 import math
 import typing
+
+
+__all__ = [
+    "Vector",
+]
 
 
 class Vector:
@@ -10,16 +17,16 @@ class Vector:
         self.y = y
 
     @staticmethod
-    def from_polar(angle: float, radius: float = 1) -> "Vector":
+    def from_polar(angle: float, radius: float = 1) -> Vector:
         return Vector(math.cos(angle) * radius, math.sin(angle) * radius)
 
-    def rotated(self, angle: float) -> "Vector":
+    def rotated(self, angle: float) -> Vector:
         return Vector(
             math.cos(angle) * self.x - math.sin(angle) * self.y,
             math.sin(angle) * self.x + math.cos(angle) * self.y,
         )
 
-    def rotated90(self) -> "Vector":
+    def rotated90(self) -> Vector:
         return Vector(-self.y, self.x)
 
     def __iter__(self):
@@ -33,10 +40,10 @@ class Vector:
 
         raise IndexError
 
-    def __add__(self, other: "Vector"):
+    def __add__(self, other: Vector):
         return Vector(self.x + other.x, self.y + other.y)
 
-    def __sub__(self, other: "Vector"):
+    def __sub__(self, other: Vector):
         return Vector(self.x - other.x, self.y - other.y)
 
     def __mul__(self, factor: float):
@@ -66,7 +73,7 @@ class Vector:
     def __bool__(self):
         return self.x or self.y
 
-    def dot(self, other: "Vector") -> float:
+    def dot(self, other: Vector) -> float:
         return self.x * other.x + self.y * other.y
 
     def squared_length(self) -> float:
@@ -85,10 +92,10 @@ class Vector:
         else:
             return Vector(self.x / norm, self.y / norm)
 
-    def map(self, func: typing.Callable[[float], float]) -> "Vector":
+    def map(self, func: typing.Callable[[float], float]) -> Vector:
         return Vector(func(self.x), func(self.y))
 
-    def copy(self) -> "Vector":
+    def copy(self) -> Vector:
         return Vector(self.x, self.y)
 
     def __repr__(self):

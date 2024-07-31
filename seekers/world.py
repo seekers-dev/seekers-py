@@ -1,10 +1,19 @@
+from __future__ import annotations
+
 import math
 import random
 import typing
 
-from seekers.vector import Vector
-from .camp import Camp
-from .config import Config, get_id
+from .vector import *
+from .config import *
+from .ids import *
+from . import (
+    camp
+)
+
+__all__ = [
+    "World",
+]
 
 
 class World:
@@ -77,13 +86,12 @@ class World:
                              "the height of the world divided by the number of players. ")
 
         for i, player in enumerate(players):
-            camp = Camp(
+            player.camp = camp.Camp(
                 id=get_id("Camp"),
                 owner=player,
                 position=Vector(self.width / 2, delta * (i + 0.5)),
                 width=config.camp_width,
                 height=config.camp_height,
             )
-            player.camp = camp
 
         return [player.camp for player in players]

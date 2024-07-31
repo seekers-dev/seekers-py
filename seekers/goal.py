@@ -1,12 +1,20 @@
-from .physical import Physical
-from seekers.vector import Vector
-from .config import Config
-from .camp import Camp
+from __future__ import annotations
+
+from .vector import *
+from .config import *
+from . import (
+    physical,
+    camp,
+)
+
+__all__ = [
+    "Goal",
+]
 
 
-class Goal(Physical):
+class Goal(physical.Physical):
     def __init__(self, scoring_time: float, base_thrust: float, *args, **kwargs):
-        Physical.__init__(self, *args, **kwargs)
+        physical.Physical.__init__(self, *args, **kwargs)
 
         self.owner = None
         self.time_owned: int = 0
@@ -30,13 +38,13 @@ class Goal(Physical):
             friction=config.goal_friction
         )
 
-    def camp_tick(self, camp: "Camp") -> bool:
+    def camp_tick(self, camp_: camp.Camp) -> bool:
         """Update the goal and return True if it has been captured."""
-        if camp.contains(self.position):
-            if self.owner == camp.owner:
+        if camp_.contains(self.position):
+            if self.owner == camp_.owner:
                 self.time_owned += 1
             else:
                 self.time_owned = 0
-                self.owner = camp.owner
+                self.owner = camp_.owner
 
         return self.time_owned >= self.scoring_time

@@ -1,5 +1,11 @@
-from seekers.vector import Vector
-from .world import World
+from __future__ import annotations
+
+from .vector import *
+from . import world
+
+__all__ = [
+    "Physical",
+]
 
 
 class Physical:
@@ -16,7 +22,7 @@ class Physical:
 
         self.friction = friction
 
-    def update_acceleration(self, world: "World"):
+    def update_acceleration(self, world_: world.World):
         """Update self.acceleration. Ideally, that is a unit vector. This is supposed to be overridden by subclasses."""
         pass
 
@@ -24,24 +30,24 @@ class Physical:
         """Return the thrust, i.e. length of applied acceleration. This is supposed to be overridden by subclasses."""
         return 1
 
-    def move(self, world: "World"):
+    def move(self, world_: world.World):
         # friction
         self.velocity *= 1 - self.friction
 
         # acceleration
-        self.update_acceleration(world)
+        self.update_acceleration(world_)
         self.velocity += self.acceleration * self.thrust()
 
         # displacement
         self.position += self.velocity
 
-        world.normalize_position(self.position)
+        world_.normalize_position(self.position)
 
-    def collision(self, other: "Physical", world: "World"):
+    def collision(self, other: Physical, world_: world.World):
         # elastic collision
         min_dist = self.radius + other.radius
 
-        d = world.torus_difference(self.position, other.position)
+        d = world_.torus_difference(self.position, other.position)
 
         dn = d.normalized()
         dv = other.velocity - self.velocity

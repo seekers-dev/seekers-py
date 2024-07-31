@@ -1,5 +1,12 @@
-from __future__ import annotations
-
+from .vector import *
+from .config import *
 from .colors import Color
-from .vector import Vector
-from .game import *
+
+from .player import *
+from .goal import *
+from .seeker import *
+from .physical import *
+from .camp import *
+from .world import *
+
+from . import debug_drawing

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import abc
 import copy
 import dataclasses
@@ -7,23 +9,42 @@ import textwrap
 import threading
 import typing
 
-from seekers.game.world import World
-from seekers.colors import Color
-from seekers.vector import Vector
-from .camp import Camp
-from .seeker import Seeker, Magnet
-from .goal import Goal
-from .config import get_id
+from .vector import *
+from .colors import *
+from .ids import *
+from . import (
+    seeker,
+    camp,
+    world,
+    goal,
+)
 
+__all__ = [
+    "Player",
+    "LocalPlayerAi",
+    "LocalPlayer",
+    "GrpcClientPlayer",
+    "InvalidAiOutputError",
+    "DecideCallable",
+    "AiInput",
+]
 
 AiInput = tuple[
     list["Seeker"], list["Seeker"], list["Seeker"], list["Goal"], list["Player"], "Camp", list["Camp"], "World", float
 ]
 DecideCallable = typing.Callable[
-    [list["Seeker"], list["Seeker"], list["Seeker"], list["Goal"], list["Player"], "Camp", list["Camp"],
-     "World", float], list["Seeker"]
-    # my seekers   other seekers all seekers   goals       other_players   my camp camps         world    time
-    # new my seekers
+    [
+        list["Seeker"],  # my seekers
+        list["Seeker"],  # other seekers
+        list["Seeker"],  # all seekers
+        list["Goal"],  # goals
+        list["Player"],  # other_players
+        "Camp",  # my camp
+        list["Camp"],  # camps
+        "World",  # world
+        float  # time
+    ],
+    list["Seeker"]  # new my seekers
 ]
 
 
@@ -32,15 +53,15 @@ class Player:
     id: str
     name: str
     score: int
-    seekers: dict[str, "Seeker"]
+    seekers: dict[str, seeker.Seeker]
 
     color: Color | None = dataclasses.field(init=False, default=None)
-    camp: typing.Union["Camp", None] = dataclasses.field(init=False, default=None)
+    camp: camp.Camp | None = dataclasses.field(init=False, default=None)
     debug_drawings: list = dataclasses.field(init=False, default_factory=list)
     preferred_color: Color | None = dataclasses.field(init=False, default=None)
 
     @abc.abstractmethod
-    def poll_ai(self, wait: bool, world: "World", goals: list["Goal"],
+    def poll_ai(self, wait: bool, world_: world.World, goals: list[goal.Goal],
                 players: dict[str, "Player"], time_: float, debug: bool):
         ...
 
@@ -121,9 +142,9 @@ class LocalPlayer(Player):
     """A player whose decide function is called directly. See README.md old method."""
     ai: LocalPlayerAi
 
-    _ai_seekers: dict[str, "Seeker"] = dataclasses.field(init=False, default=None)
-    _ai_goals: list[Goal] = dataclasses.field(init=False, default=None)
-    _ai_players: dict[str, "Player"] = dataclasses.field(init=False, default=None)
+    _ai_seekers: dict[str, seeker.Seeker] = dataclasses.field(init=False, default=None)
+    _ai_goals: list[goal.Goal] = dataclasses.field(init=False, default=None)
+    _ai_players: dict[str, Player] = dataclasses.field(init=False, default=None)
 
     def __post_init__(self):
         self._logger = logging.getLogger(self.name)
@@ -132,8 +153,8 @@ class LocalPlayer(Player):
     def preferred_color(self) -> Color | None:
         return self.ai.preferred_color
 
-    def init_ai_state(self, goals: list[Goal], players: dict[str, "Player"]):
-        self._ai_goals = [copy.deepcopy(goal) for goal in goals]
+    def init_ai_state(self, goals: list[goal.Goal], players: dict[str, "Player"]):
+        self._ai_goals = [copy.deepcopy(goal_) for goal_ in goals]
 
         self._ai_players = {}
         self._ai_seekers = {}
@@ -147,7 +168,7 @@ class LocalPlayer(Player):
             )
             p.color = copy.deepcopy(player.color)
             p.preferred_color = copy.deepcopy(player.preferred_color)
-            p.camp = Camp(
+            p.camp = camp.Camp(
                 id=player.camp.id,
                 owner=p,
                 position=player.camp.position.copy(),
@@ -157,39 +178,40 @@ class LocalPlayer(Player):
 
             self._ai_players[player.id] = p
 
-            for seeker in player.seekers.values():
-                s = copy.deepcopy(seeker)
+            for seeker_ in player.seekers.values():
+                s = copy.deepcopy(seeker_)
                 s.owner = p
 
-                p.seekers[seeker.id] = s
-                self._ai_seekers[seeker.id] = s
+                p.seekers[seeker_.id] = s
+                self._ai_seekers[seeker_.id] = s
 
-    def update_ai_state(self, goals: list[Goal], players: dict[str, "Player"]):
+    def update_ai_state(self, goals: list[goal.Goal], players: dict[str, "Player"]):
         if self._ai_seekers is None:
             self.init_ai_state(goals, players)
 
-        for ai_goal, goal in zip(self._ai_goals, goals):
-            ai_goal.position = goal.position.copy()
-            ai_goal.velocity = goal.velocity.copy()
-            ai_goal.owner = self._ai_players[goal.owner.id] if goal.owner else None
-            ai_goal.time_owned = goal.time_owned
+        for ai_goal, goal_ in zip(self._ai_goals, goals):
+            ai_goal.position = goal_.position.copy()
+            ai_goal.velocity = goal_.velocity.copy()
+            ai_goal.owner = self._ai_players[goal_.owner.id] if goal_.owner else None
+            ai_goal.time_owned = goal_.time_owned
 
         for player in players.values():
-            for seeker_id, seeker in player.seekers.items():
+            for seeker_id, seeker_ in player.seekers.items():
                 ai_seeker = self._ai_seekers[seeker_id]
 
-                ai_seeker.position = seeker.position.copy()
-                ai_seeker.velocity = seeker.velocity.copy()
-                ai_seeker.target = seeker.target.copy()
-                ai_seeker.disabled_counter = seeker.disabled_counter
-                ai_seeker.magnet.strength = seeker.magnet.strength
+                ai_seeker.position = seeker_.position.copy()
+                ai_seeker.velocity = seeker_.velocity.copy()
+                ai_seeker.target = seeker_.target.copy()
+                ai_seeker.disabled_counter = seeker_.disabled_counter
+                ai_seeker.magnet.strength = seeker_.magnet.strength
 
-    def get_ai_input(self,
-                     world: "World",
-                     goals: list[Goal],
-                     players: dict[str, "Player"],
-                     time: float
-                     ) -> AiInput:
+    def get_ai_input(
+        self,
+        world_: world.World,
+        goals: list[goal.Goal],
+        players: dict[str, Player],
+        time: float
+    ) -> AiInput:
         self.update_ai_state(goals, players)
 
         me = self._ai_players[self.id]
@@ -206,7 +228,7 @@ class LocalPlayer(Player):
             self._ai_goals.copy(),
             [player for player in self._ai_players.values() if player is not me],
             my_camp, camps,
-            World(world.width, world.height),
+            world.World(world_.width, world_.height),
             time
         )
 
@@ -249,14 +271,14 @@ class LocalPlayer(Player):
                     f"AI output contains a seeker with id {ai_seeker.id!r} which is not one of the player's seekers."
                 ) from e
 
-            if not isinstance(ai_seeker, Seeker):
+            if not isinstance(ai_seeker, seeker.Seeker):
                 raise InvalidAiOutputError(f"AI output must be a list of Seekers, not {type(ai_seeker)!r}.")
 
             if not isinstance(ai_seeker.target, Vector):
                 raise InvalidAiOutputError(
                     f"AI output Seeker target must be a Vector, not {type(ai_seeker.target)!r}.")
 
-            if not isinstance(ai_seeker.magnet, Magnet):
+            if not isinstance(ai_seeker.magnet, seeker.Magnet):
                 raise InvalidAiOutputError(
                     f"AI output Seeker magnet must be a Magnet, not {type(ai_seeker.magnet)!r}.")
 
@@ -275,11 +297,11 @@ class LocalPlayer(Player):
                     f"AI output Seeker magnet strength must be a float, not {ai_seeker.magnet.strength!r}."
                 ) from e
 
-    def poll_ai(self, wait: bool, world: "World", goals: list[Goal], players: dict[str, "Player"],
+    def poll_ai(self, wait: bool, world_: world.World, goals: list[goal.Goal], players: dict[str, Player],
                 time_: float, debug: bool):
         # ignore wait flag, supporting it would be a lot of extra code, instead always wait (blocking)
 
-        ai_input = self.get_ai_input(world, goals, players, time_)
+        ai_input = self.get_ai_input(world_, goals, players, time_)
 
         try:
             ai_output = self.call_ai(ai_input, debug)
@@ -323,7 +345,7 @@ class GrpcClientPlayer(Player):
 
         self.was_updated.clear()
 
-    def poll_ai(self, wait: bool, world: "World", goals: list[Goal], players: dict[str, "Player"],
+    def poll_ai(self, wait: bool, world_: world.World, goals: list[goal.Goal], players: dict[str, Player],
                 time_: float, debug: bool):
         if wait:
             self.wait_for_update()
