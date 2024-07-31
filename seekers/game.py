@@ -52,8 +52,8 @@ class SeekersGame:
             self._logger.warning("Config option `global.wait-for-players=false` is not supported for local players.")
 
         if grpc_address and len(self.players) < config.global_players:
-            from seekers.grpc.server import GrpcSeekersServer
             try:
+                from seekers.grpc.server import GrpcSeekersServer
                 self.grpc = GrpcSeekersServer(self, grpc_address)
             except ImportError as e:
                 self._logger.warning("gRPC server could not be started. Import error.", exc_info=e)

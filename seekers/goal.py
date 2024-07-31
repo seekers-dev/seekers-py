@@ -5,6 +5,7 @@ from .config import *
 from . import (
     physical,
     camp,
+    player,
 )
 
 __all__ = [
@@ -16,7 +17,7 @@ class Goal(physical.Physical):
     def __init__(self, scoring_time: float, base_thrust: float, *args, **kwargs):
         physical.Physical.__init__(self, *args, **kwargs)
 
-        self.owner = None
+        self.owner: player.Player | None = None
         self.time_owned: int = 0
 
         self.scoring_time = scoring_time
