@@ -1,4 +1,4 @@
-from .vector import Vector
+from seekers.vector import Vector
 from .world import World
 
 

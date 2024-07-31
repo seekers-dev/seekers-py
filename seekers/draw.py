@@ -4,11 +4,14 @@ import math
 
 import pygame
 
-from seekers import *
 from .colors import *
-from player import Player
-from .seekers_types import Config
-from .player import LocalPlayer, GrpcClientPlayer
+from seekers.vector import Vector
+from seekers.game.seeker import Seeker
+from seekers.game.goal import Goal
+from seekers.game.world import World
+from seekers.game.camp import Camp
+from seekers.game.player import Player, LocalPlayer, GrpcClientPlayer
+from seekers.game.config import Config
 
 
 class Animation(abc.ABC):

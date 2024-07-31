@@ -1,10 +1,9 @@
 import math
 
-from seekers.seekers_types import Config
-from .vector import Vector
+from .config import Config
+from seekers.vector import Vector
 from .physical import Physical
-from .player import Player
-from seekers.game.world import World
+from .world import World
 
 
 class Magnet:
@@ -36,7 +35,7 @@ class Magnet:
 
 
 class Seeker(Physical):
-    def __init__(self, owner: Player, disabled_time: float, magnet_slowdown: float, base_thrust: float, *args,
+    def __init__(self, owner, disabled_time: float, magnet_slowdown: float, base_thrust: float, *args,
                  **kwargs):
         Physical.__init__(self, *args, **kwargs)
 
@@ -50,7 +49,7 @@ class Seeker(Physical):
         self.base_thrust = base_thrust
 
     @classmethod
-    def from_config(cls, owner: Player, id_: str, position: Vector, config: Config):
+    def from_config(cls, owner, id_: str, position: Vector, config: Config):
         return cls(
             owner=owner,
             disabled_time=config.seeker_disabled_time,

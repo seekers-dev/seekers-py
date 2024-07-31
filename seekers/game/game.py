@@ -9,12 +9,14 @@ import time
 import typing
 import pygame
 
-from seekers import *
-from seekers.seekers_types import Config, get_id
-from seekers.player import LocalPlayer
+from .game_logic import tick
+from .config import Config, get_id
+from .seeker import Seeker
+from .goal import Goal
+from .world import World
+from .player import Player, LocalPlayer
 from seekers import colors
 from seekers import draw
-from seekers.game import game_logic
 
 
 class GameFullError(Exception): ...
@@ -127,7 +129,7 @@ class SeekersGame:
                     player.poll_ai(self.config.global_wait_for_players, self.world, self.goals, self.players,
                                    self.ticks, self.debug)
 
-                game_logic.tick(self.players.values(), self.camps, self.goals, self.animations, self.world)
+                tick(self.players.values(), self.camps, self.goals, self.animations, self.world)
 
                 self.ticks += 1
 

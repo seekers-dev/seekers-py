@@ -39,7 +39,7 @@ def main():
 
     args = parser.parse_args()
 
-    if args.nogrpc and not args.ai_files:
+    if args.no_grpc and not args.ai_files:
         raise ValueError("At least one AI file must be provided if gRPC is disabled.")
 
     config = Config.from_filepath(args.config)
@@ -53,14 +53,14 @@ def main():
 
     logging.basicConfig(level=args.loglevel, style="{", format=f"[{{name}}] {{levelname}}: {{message}}",
                         stream=sys.stdout)
-    address = args.address if not args.nogrpc else False
+    address = args.address if not args.no_grpc else False
 
     seekers_game = SeekersGame(
         local_ai_locations=args.ai_files,
         config=config,
         grpc_address=address,
         debug=args.debug,
-        dont_kill=args.nokill
+        dont_kill=args.no_kill
     )
     seekers_game.listen()
     seekers_game.start()

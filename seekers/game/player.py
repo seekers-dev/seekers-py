@@ -9,7 +9,7 @@ import typing
 
 from seekers.game.world import World
 from seekers.colors import Color
-from .vector import Vector
+from seekers.vector import Vector
 from .camp import Camp
 from .seeker import Seeker, Magnet
 from .goal import Goal

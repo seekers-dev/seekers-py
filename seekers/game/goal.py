@@ -1,5 +1,5 @@
 from .physical import Physical
-from .vector import Vector
+from seekers.vector import Vector
 from .config import Config
 from .camp import Camp
 

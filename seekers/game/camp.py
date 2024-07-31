@@ -1,13 +1,12 @@
 import dataclasses
 
-from .vector import Vector
-from .player import Player
+from seekers.vector import Vector
 
 
 @dataclasses.dataclass
 class Camp:
     id: str
-    owner: Player
+    owner: "Player"
     position: Vector
     width: float
     height: float

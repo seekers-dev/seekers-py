@@ -2,10 +2,7 @@ import math
 import random
 import typing
 
-from .vector import Vector
-from .goal import Goal
-from .seeker import Seeker
-from .player import Player
+from seekers.vector import Vector
 from .camp import Camp
 from .config import Config, get_id
 
@@ -60,11 +57,11 @@ class World:
                 j = i + 1
         return j
 
-    def nearest_goal(self, pos: Vector, goals: list) -> Goal:
+    def nearest_goal(self, pos: Vector, goals: list):
         i = self.index_of_nearest(pos, [g.position for g in goals])
         return goals[i]
 
-    def nearest_seeker(self, pos: Vector, seekers: list) -> Seeker:
+    def nearest_seeker(self, pos: Vector, seekers: list):
         i = self.index_of_nearest(pos, [s.position for s in seekers])
         return seekers[i]
 
@@ -72,7 +69,7 @@ class World:
         return Vector(random.uniform(0, self.width),
                       random.uniform(0, self.height))
 
-    def generate_camps(self, players: typing.Collection[Player], config: Config) -> list["Camp"]:
+    def generate_camps(self, players: typing.Collection, config: Config) -> list["Camp"]:
         delta = self.height / len(players)
 
         if config.camp_height > delta:

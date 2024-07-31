@@ -4,7 +4,7 @@ from .player import Player
 from .camp import Camp
 from .goal import Goal
 from .world import World
-from .vector import Vector
+from seekers.vector import Vector
 from .seeker import Seeker
 from .physical import Physical
 from seekers.draw import ScoreAnimation, Animation
