@@ -10,4 +10,4 @@ echo "Building binaries ..."
 venv/bin/python setup.py build
 
 echo "Create archive"
-zip -r seekers-bin.zip build
+zip -r seekers-linux-bin.zip build

@@ -3,7 +3,8 @@ import os
 import sys
 import logging
 import seekers.grpc.client
-import seekers.seekers_types
+
+from seekers.game.player import LocalPlayerAi
 
 
 def run_ai(args: argparse.Namespace):
@@ -14,7 +15,7 @@ def run_ai(args: argparse.Namespace):
         stream=sys.stdout, force=True
     )
 
-    ai = seekers.seekers_types.LocalPlayerAi.from_file(args.ai_file)
+    ai = LocalPlayerAi.from_file(args.ai_file)
 
     service_wrapper = seekers.grpc.client.GrpcSeekersServiceWrapper(address=args.address)
     client = seekers.grpc.client.GrpcSeekersClient(service_wrapper, ai, careful_mode=args.careful)
@@ -33,9 +34,9 @@ def run_ai(args: argparse.Namespace):
 
 def main():
     parser = argparse.ArgumentParser(description='Run a Python Seekers AI as a gRPC client.')
-    parser.add_argument("-address", "-a", type=str, default="localhost:7777",
+    parser.add_argument("--address", "-a", type=str, default="localhost:7777",
                         help="Address of the Seekers game. (default: localhost:7777)")
-    parser.add_argument("-loglevel", "-log", "-l", type=str, default="INFO",
+    parser.add_argument("--loglevel", "--log", "-l", type=str, default="INFO",
                         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"])
     parser.add_argument("--careful", action="store_true", help="Enable careful mode for the gRPC clients. This will "
                                                                "raise an exception and stop the client when errors "

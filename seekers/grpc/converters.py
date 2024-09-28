@@ -10,7 +10,7 @@ from .stubs.org.seekers.grpc.game.seeker_pb2 import Seeker
 from .stubs.org.seekers.grpc.game.vector2d_pb2 import Vector2D
 from .stubs.org.seekers.grpc.service.seekers_pb2 import Section
 
-from .. import seekers_types as seekers
+import seekers
 
 
 def vector_to_seekers(vector: Vector2D) -> seekers.Vector:

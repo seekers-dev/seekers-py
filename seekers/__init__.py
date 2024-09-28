@@ -1,14 +1,12 @@
-from __future__ import annotations
-
+from .vector import *
+from .config import *
 from .colors import Color
-from .seekers_types import (
-    Config,
-    Vector,
-    Physical,
-    Goal,
-    Magnet,
-    Seeker,
-    Player,
-    World,
-    Camp,
-)
+
+from .player import *
+from .goal import *
+from .seeker import *
+from .physical import *
+from .camp import *
+from .world import *
+
+from . import debug_drawing

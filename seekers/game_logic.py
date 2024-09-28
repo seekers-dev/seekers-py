@@ -1,15 +1,34 @@
-from .draw import ScoreAnimation, Animation
-from .seekers_types import *
+from __future__ import annotations
 
 import typing
 
+from .vector import *
+from . import (
+    world,
+    draw,
+    camp,
+    goal,
+    player,
+    physical,
+    seeker
+)
 
-def tick(players: typing.Iterable[Player], camps: list[Camp], goals: list[Goal],
-         animations: list[Animation], world: World):
+__all__ = [
+    "tick",
+]
+
+
+def tick(
+    players: typing.Iterable[player.Player],
+    camps: list[camp.Camp],
+    goals: list[goal.Goal],
+    animations: list[draw.Animation],
+    world_: world.World
+):
     seekers = [s for p in players for s in p.seekers.values()]
     # move and recover seekers
     for s in seekers:
-        s.move(world)
+        s.move(world_)
         if s.is_disabled:
             s.disabled_counter -= 1
 
@@ -17,9 +36,9 @@ def tick(players: typing.Iterable[Player], camps: list[Camp], goals: list[Goal],
     for g in goals:
         g.acceleration = Vector(0, 0)
         for s in seekers:
-            g.acceleration += s.magnetic_force(world, g.position)
+            g.acceleration += s.magnetic_force(world_, g.position)
 
-        g.move(world)
+        g.move(world_)
 
     # handle collisions
     # noinspection PyTypeChecker
@@ -29,23 +48,23 @@ def tick(players: typing.Iterable[Player], camps: list[Camp], goals: list[Goal],
         while j < len(physicals):
             phys2 = physicals[j]
 
-            d = world.torus_difference(phys2.position, phys1.position).squared_length()
+            d = world_.torus_difference(phys2.position, phys1.position).squared_length()
 
             min_dist = phys1.radius + phys2.radius
 
             if d < min_dist ** 2:
-                if isinstance(phys1, Seeker) and isinstance(phys2, Seeker):
-                    Seeker.collision(phys1, phys2, world)
+                if isinstance(phys1, seeker.Seeker) and isinstance(phys2, seeker.Seeker):
+                    seeker.Seeker.collision(phys1, phys2, world_)
                 else:
-                    Physical.collision(phys1, phys2, world)
+                    physical.Physical.collision(phys1, phys2, world_)
 
             j += 1
 
     # handle goals and scoring
     for i, g in enumerate(goals):
-        for camp in camps:
-            if g.camp_tick(camp):
-                goal_scored(camp.owner, i, goals, animations, world)
+        for camp_ in camps:
+            if g.camp_tick(camp_):
+                goal_scored(camp_.owner, i, goals, animations, world_)
                 break
 
     # advance animations
@@ -56,13 +75,19 @@ def tick(players: typing.Iterable[Player], camps: list[Camp], goals: list[Goal],
             animations.pop(i)
 
 
-def goal_scored(player: Player, goal_index: int, goals: list[Goal], animations: list[Animation], world: World):
-    player.score += 1
+def goal_scored(
+    player_: player.Player,
+    goal_index: int,
+    goals: list[goal.Goal],
+    animations: list[draw.Animation],
+    world_: world.World
+):
+    player_.score += 1
 
-    goal = goals[goal_index]
+    goal_ = goals[goal_index]
 
-    animations.append(ScoreAnimation(goal.position, player.color, goal.radius))
+    animations.append(draw.ScoreAnimation(goal_.position, player_.color, goal_.radius))
 
-    goal.position = world.random_position()
-    goal.owner = None
-    goal.time_owned = 0
+    goal_.position = world_.random_position()
+    goal_.owner = None
+    goal_.time_owned = 0

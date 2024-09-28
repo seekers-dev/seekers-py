@@ -9,7 +9,12 @@ from .converters import *
 from .stubs.org.seekers.grpc.service.seekers_pb2 import *
 from .stubs.org.seekers.grpc.service.seekers_pb2_grpc import *
 
-from .. import game
+from .. import (
+    game,
+    colors,
+)
+from ..player import GrpcClientPlayer
+from ..ids import *
 
 
 class GrpcSeekersServicer(SeekersServicer):
@@ -57,7 +62,7 @@ class GrpcSeekersServicer(SeekersServicer):
 
             # check if seeker is owned by player
             # noinspection PyTypeChecker
-            if not isinstance(seeker.owner, seekers.GrpcClientPlayer) or seeker.owner.token != request.token:
+            if not isinstance(seeker.owner, GrpcClientPlayer) or seeker.owner.token != request.token:
                 context.abort(
                     grpc.StatusCode.PERMISSION_DENIED,
                     f"Seeker with id {command.seeker_id!r} (owner player id: {seeker.owner.id!r}) "
@@ -87,7 +92,7 @@ class GrpcSeekersServicer(SeekersServicer):
                 self.generate_status()
             return self.current_status
 
-    def join_game(self, name: str, color: seekers.Color | None) -> tuple[str, str]:
+    def join_game(self, name: str, color: colors.Color | None) -> tuple[str, str]:
         # add the player with a new name if the requested name is already taken
         _requested_name = name
         i = 2
@@ -96,10 +101,10 @@ class GrpcSeekersServicer(SeekersServicer):
             i += 1
 
         # create new player
-        new_token = seekers.get_id("Token")
-        player = seekers.GrpcClientPlayer(
+        new_token = get_id("Token")
+        player = GrpcClientPlayer(
             token=new_token,
-            id=seekers.get_id("Player"),
+            id=get_id("Player"),
             name=_requested_name,
             score=0,
             seekers={},
