@@ -11,7 +11,7 @@ import typing
 
 from .vector import *
 from seekers.graphics.colors import *
-from seekers.net.ids import *
+from seekers.ids import *
 from . import seeker, camp, goal, world
 
 __all__ = [

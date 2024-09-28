@@ -14,7 +14,7 @@ from .. import (
 )
 from ..graphics import colors
 from seekers.game.player import GrpcClientPlayer
-from seekers.net.ids import *
+from seekers.ids import *
 
 
 class GrpcSeekersServicer(SeekersServicer):

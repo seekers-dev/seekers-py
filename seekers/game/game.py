@@ -7,11 +7,10 @@ import os
 import random
 import time
 import typing
-
 import pygame
 
+import seekers.ids as ids
 from .config import *
-from seekers.net.ids import *
 from ..graphics import colors, draw
 from . import game_logic, player, seeker, goal, world
 
@@ -76,13 +75,13 @@ class SeekersGame:
         random.seed(self.config.global_seed)
 
         # initialize goals
-        self.goals = [goal.Goal.from_config(get_id("Goal"), self.world.random_position(), self.config) for _ in
+        self.goals = [goal.Goal.from_config(ids.get_id("Goal"), self.world.random_position(), self.config) for _ in
                       range(self.config.global_goals)]
 
-        # initialize players
+        # initialise players
         for p in self.players.values():
             p.seekers = {
-                (id_ := get_id("Seeker")): seeker.Seeker.from_config(p, id_, self.world.random_position(), self.config)
+                (id_ := ids.get_id("Seeker")): seeker.Seeker.from_config(p, id_, self.world.random_position(), self.config)
                 for _ in range(self.config.global_seekers)
             }
             p.color = self.get_new_player_color(p)

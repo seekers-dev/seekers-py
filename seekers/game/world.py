@@ -6,7 +6,7 @@ import typing
 
 from .vector import *
 from .config import *
-from seekers.net.ids import *
+from seekers.ids import *
 from . import camp
 
 __all__ = [

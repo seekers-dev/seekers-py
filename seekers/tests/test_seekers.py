@@ -5,7 +5,7 @@ import unittest
 from seekers import Config
 from seekers.game.player import LocalPlayerAi
 from seekers.game import SeekersGame
-from seekers.grpc.client import GrpcSeekersServiceWrapper, GrpcSeekersClient
+from seekers.net.client import GrpcSeekersServiceWrapper, GrpcSeekersClient
 
 
 class TestSeekers(unittest.TestCase):
