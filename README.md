@@ -1,63 +1,43 @@
-<h1 align=center>Seekers</h1>
+<div align=center>
+    <h1 align=center>Seekers Py</h1>
+    <!-- Badges -->
+    <div>
+        <img src="https://github.com/seekers-dev/seekers-py/actions/workflows/python-app.yml/badge.svg" alt="Python Version 3.9/3.10">
+        <img src="https://github.com/seekers-dev/seekers-py/actions/workflows/github-code-scanning/codeql/badge.svg" alt="CodeQL">
+        <img src="https://github.com/seekers-dev/seekers/actions/workflows/python-app.yml/badge.svg" alt="pre-release">
+    </div>
+    <i>Learn to code with games.</i>
+</div>
 
-<p align=center>
-  <a href="https://github.com/seekers-dev/seekers/actions/workflows/python-app.yml">
-    <img src="https://github.com/seekers-dev/seekers-py/actions/workflows/python-app.yml/badge.svg" alt="Python Version 3.9/3.10">
-  </a>
-  <a href="https://github.com/seekers-dev/seekers-py/actions/workflows/github-code-scanning/codeql">
-    <img src="https://github.com/seekers-dev/seekers-py/actions/workflows/github-code-scanning/codeql/badge.svg" alt="CodeQL">
-  </a>
-  <a href="https://github.com/seekers-dev/seekers-py/actions/workflows/pre-release.yml">
-    <img src="https://github.com/seekers-dev/seekers/actions/workflows/python-app.yml/badge.svg" alt="pre-release">
-  </a>
-</p>
-
-* An artificial intelligence programming challenge targeted at students.
-* AIs compete by controlling bouncy little circles ("seekers") trying to collect the most goals.
-* Based on Python 3.9 and pygame.
-
-![image](https://user-images.githubusercontent.com/37810842/226148194-e5b55d57-ed84-4e71-869b-d062b101b345.png)
-
-## This repository contains
-
-- 🎮 A classic Python implementation of the Seekers game
-- 🌐 A server and client implementation of the [Seekers gRPC API](https://github.com/seekers-dev/seekers-grpc)
-
-Players can join the Seekers Game in two ways:
-1. as gRPC clients (new and safe way)
-2. as a local file whose `decide`-function is called directly from within the game (old and unsafe way)
-   * This is discouraged as it allows players to access the game's internals and cheat. See [this issue](https://github.com/seekers-dev/seekers/issues/1).
-   * useful for debugging/AI-developement
+<table>
+    <tr>
+    <td width="40%">
+    <img alt="Game Preview" src=https://user-images.githubusercontent.com/37810842/226148194-e5b55d57-ed84-4e71-869b-d062b101b345.png>
+    </td>
+    <td>
+    <ul>
+        <li>Artificial intelligence programming challenge, hopefully suited for school students.</li>
+        <li>AIs compete by controlling bouncy little circles ("seekers") trying to collect the most goals.</li>
+        <li>Based on Python 3 and pygame.</li>
+    </ul>
+    </td>
+    </tr>
+</table>
 
 ## Getting started
 
-### Installation
+### Setup
 
-You can install seekers by downloading prebuild wrapped binaries from Sourceforge or GitHub or by building it on your own. The prebuild wrapped binaries do not require python, but are only available for windows and linux. If you are looking for darwin/macOS, you still need to build it on your own.
+You can install seekers by downloading prebuild wrapped binaries from Sourceforge or GitHub
+or by building it on your own.
+The prebuilt wrapped binaries do not require python but are only available for windows and linux.
+If you are looking for darwin/macOS, you still need to build it on your own.
 
 [![Download seekers-py](https://a.fsdn.com/con/app/sf-download-button)](https://sourceforge.net/projects/seekers-py/files/latest/download)
 
 For building it on your own:
-* Python 3.9 or higher is required (make sure it's in your PATH)
-1. Download the latest release and unpack it.
-2. Install the packages in [`requirements.txt`](requirements.txt). 
-   - We recommend using a [virtual environment](https://docs.python.org/3/library/venv.html) (venv). Whenever opening a new terminal, you will have to activate the virtual environment again.
-   - To create: `python -m venv venv`
-   - To activate: `source venv/bin/activate` (Linux) or `venv\Scripts\activate` (Windows)
-
-```shell
-python -m pip install -r requirements.txt
-```
-
-alternatively:
-
-```shell
-pip install -r requirements.txt
-```
-
-Depending on how you installed python, you might have to use `py` or `python3` instead of `python`.
-
-3. Done!
+1. Clone this repository or download the latest release: `git clone https://github.com/seekers-dev/seekers-py.git`
+2. Run the setup script: `bash setup.py` (linux) or `.\setup.bat` (win32)
 
 ### Create server and run clients
 
@@ -66,26 +46,15 @@ This will:
 * run a gRPC server by default
 
 ```shell
-python run_seekers.py <AI files>
+python seekers.py <AI files>
 ```
-
 
 ### Run one single client
 
 ⚠ You will need a separate server running. This can be the server above, or, for example, [the Java implementation](https://github.com/seekers-dev/seekers-api).
 
 ```shell
-python run_client.py <AI file>
-```
-
-## Development
-### Generating gRPC stubs 
-After cloning, you need to compile the gRPC stubs manually.
-
-```shell
-cd seekers/grpc
-pip install -r requirements-dev.txt
-./compile_protos.sh
+python client.py <AI file>
 ```
 
 ## License
