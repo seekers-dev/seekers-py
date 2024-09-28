@@ -5,6 +5,8 @@
 - Move files to new python packages
 - Add cx_Freeze to create native wrapper binaries
 - Move submodule
+- Update pre-release workflow
+- Update submodules
 
 # v0.1.0
 

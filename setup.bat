@@ -9,5 +9,5 @@ git submodule update --init --recursive --remote
 
 echo "Compile proto files"
 cd seekers-api
-bash compile.bat
+.\compile.bat
 cp -r api ../seekers
