@@ -7,6 +7,7 @@
 - Move submodule
 - Update pre-release workflow
 - Update submodules
+- Add code of conduct
 
 # v0.1.0
 
