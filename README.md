@@ -39,23 +39,58 @@ For building it on your own:
 1. Clone this repository or download the latest release: `git clone https://github.com/seekers-dev/seekers-py.git`
 2. Run the setup script: `bash setup.py` (linux) or `.\setup.bat` (win32)
 
-### Create server and run clients
+### Run seekers
 
-This will:
-* start a Seekers Game
-* run a gRPC server by default
+If you want to run the seekers game with the AI files, you should run the following command: 
 
 ```shell
 python seekers.py <AI files>
 ```
 
-### Run one single client
+This script has the following options on the command line:
 
-⚠ You will need a separate server running. This can be the server above, or, for example, [the Java implementation](https://github.com/seekers-dev/seekers-api).
+```log
+options:
+  -h, --help            show this help message and exit
+  --no-grpc             Don't host a gRPC server.
+  --no-kill             Don't kill the process after the game is over.
+  --debug               Enable debug mode. This will enable debug drawing.
+  --address ADDRESS, -a ADDRESS
+                        Address of the server. (default: localhost:7777)
+  --config CONFIG, -c CONFIG
+                        Path to the config file. (default: config.ini)
+  --config-override CONFIG_OVERRIDE, --override CONFIG_OVERRIDE, -o CONFIG_OVERRIDE
+                        Override a config option. Use the form option=value,
+                        e.g. global.seed=43.
+  --loglevel {DEBUG,INFO,WARNING,ERROR,CRITICAL},
+  --log {DEBUG,INFO,WARNING,ERROR,CRITICAL},
+  -l {DEBUG,INFO,WARNING,ERROR,CRITICAL}
+```
+
+### Run a client
+
+> [!NOTE]
+> You will need a separate server running. This can be the server above, or, for example, [the Java implementation](https://github.com/seekers-dev/seekers-api).
 
 ```shell
 python client.py <AI file>
 ```
+
+This script has the following options on the command line:
+
+```
+options:
+  -h, --help            show this help message and exit
+  --address ADDRESS, -a ADDRESS
+                        Address of the Seekers game. (default: localhost:7777)
+  --loglevel {DEBUG,INFO,WARNING,ERROR,CRITICAL},
+  --log {DEBUG,INFO,WARNING,ERROR,CRITICAL},
+  -l {DEBUG,INFO,WARNING,ERROR,CRITICAL}
+  --careful             Enable careful mode for the gRPC clients. This will
+                        raise an exception and stop the client when errors
+                        occur that otherwise would be ignored.
+```
+
 
 ## License
 
