@@ -5,7 +5,6 @@ import dataclasses
 from .vector import *
 from . import player
 
-
 __all__ = [
     "Camp"
 ]

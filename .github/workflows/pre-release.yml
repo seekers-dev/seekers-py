@@ -23,21 +23,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r seekers/grpc/requirements-dev.txt
           sudo apt install protobuf-compiler
-
-      - name: "Build gRPC stubs"
-        run: |
-          cd seekers/grpc
-          bash compile_protos.sh
-          cd ../..
       
-      - name: "Create archives"
-        run: |
-          zip -r seekers-linux-stubs.zip seekers/grpc/stubs
-          zip -r seekers-linux.zip *
+      - name: "Setup project"
+        run: bash setup.py
 
-      - name: "Build binaries"
-        run: |
-          bash freeze.sh
+      - name: "Deploy binaries"
+        run: bash deploy.sh
 
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
@@ -59,26 +50,17 @@ jobs:
         uses: actions/setup-python@v3
         with:
           python-version: "3.11"
-      
+
       - name: "Install requirements"
         run: |
           python -m pip install --upgrade pip
           pip install -r .\seekers\grpc\requirements-dev.txt
 
-      - name: "Build gRPC stubs"
-        run: |
-          cd seekers\grpc
-          .\compile_protos.bat
-          cd ..\..
-          
-      - name: "Create archives"
-        run: |
-          powershell Compress-Archive ".\" "seekers-win32.zip"
-          powershell Compress-Archive ".\seekers\grpc\stubs" "seekers-win32-stubs.zip"
+      - name: "Setup project"
+        run: .\setup.bat
 
-      - name: "Build binaries"
-        run: |
-          .\freeze.bat
+      - name: "Deploy binaries"
+        run: .\deploy.bat
 
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:

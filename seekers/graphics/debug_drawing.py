@@ -5,8 +5,8 @@ import dataclasses
 import typing
 from contextvars import ContextVar
 
-from .vector import *
-from . import draw
+from seekers.game.vector import *
+from seekers.graphics import draw
 
 __all__ = [
     "draw_text",

@@ -6,10 +6,8 @@ import typing
 
 from .vector import *
 from .config import *
-from .ids import *
-from . import (
-    camp
-)
+from seekers.net.ids import *
+from . import camp
 
 __all__ = [
     "World",

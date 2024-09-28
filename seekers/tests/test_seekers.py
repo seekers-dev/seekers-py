@@ -3,7 +3,7 @@ import threading
 import unittest
 
 from seekers import Config
-from seekers.player import LocalPlayerAi
+from seekers.game.player import LocalPlayerAi
 from seekers.game import SeekersGame
 from seekers.grpc.client import GrpcSeekersServiceWrapper, GrpcSeekersClient
 

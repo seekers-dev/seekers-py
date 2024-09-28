@@ -4,10 +4,7 @@ import math
 
 from .config import *
 from .vector import *
-from . import (
-    physical,
-    world,
-)
+from . import physical, world
 
 __all__ = [
     "Magnet",

@@ -11,16 +11,9 @@ import typing
 import pygame
 
 from .config import *
-from .ids import *
-from . import (
-    world,
-    draw,
-    seeker,
-    player,
-    goal,
-    game_logic,
-    colors
-)
+from seekers.net.ids import *
+from ..graphics import colors, draw
+from . import game_logic, player, seeker, goal, world
 
 __all__ = [
     "SeekersGame",

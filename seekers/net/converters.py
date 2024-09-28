@@ -2,13 +2,13 @@
 import dataclasses
 from collections import defaultdict
 
-from .stubs.org.seekers.grpc.game.camp_pb2 import Camp
-from .stubs.org.seekers.grpc.game.goal_pb2 import Goal
-from .stubs.org.seekers.grpc.game.physical_pb2 import Physical
-from .stubs.org.seekers.grpc.game.player_pb2 import Player
-from .stubs.org.seekers.grpc.game.seeker_pb2 import Seeker
-from .stubs.org.seekers.grpc.game.vector2d_pb2 import Vector2D
-from .stubs.org.seekers.grpc.service.seekers_pb2 import Section
+from seekers.api.org.seekers.api.camp_pb2 import Camp
+from seekers.api.org.seekers.api.goal_pb2 import Goal
+from seekers.api.org.seekers.api.physical_pb2 import Physical
+from seekers.api.org.seekers.api.player_pb2 import Player
+from seekers.api.org.seekers.api.seeker_pb2 import Seeker
+from seekers.api.org.seekers.api.vector2d_pb2 import Vector2D
+from seekers.api.org.seekers.api.seekers_pb2 import Section
 
 import seekers
 

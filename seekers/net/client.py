@@ -6,10 +6,10 @@ import time
 from grpc._channel import _InactiveRpcError
 
 from .converters import *
-from .stubs.org.seekers.grpc.service.seekers_pb2 import *
-from .stubs.org.seekers.grpc.service.seekers_pb2_grpc import *
+from seekers.api.org.seekers.api.seekers_pb2 import *
+from seekers.api.org.seekers.api.seekers_pb2_grpc import *
 
-import seekers.colors
+import seekers.graphics.colors
 
 
 class GrpcSeekersClientError(Exception): ...
@@ -46,7 +46,7 @@ class GrpcSeekersServiceWrapper:
     def join(self, name: str, color: seekers.Color = None) -> str:
         """Try to join the game and return our player id."""
 
-        color = seekers.colors.string_hash_color(name) if color is None else color
+        color = seekers.graphics.colors.string_hash_color(name) if color is None else color
 
         self._logger.info(f"Joining game as {name!r} with color {color!r}.")
 

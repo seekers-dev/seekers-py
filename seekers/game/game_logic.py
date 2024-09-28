@@ -3,15 +3,8 @@ from __future__ import annotations
 import typing
 
 from .vector import *
-from . import (
-    world,
-    draw,
-    camp,
-    goal,
-    player,
-    physical,
-    seeker
-)
+from ..graphics import draw
+from . import physical, player, seeker, camp, goal, world
 
 __all__ = [
     "tick",

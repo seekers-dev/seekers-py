@@ -2,11 +2,7 @@ from __future__ import annotations
 
 from .vector import *
 from .config import *
-from . import (
-    physical,
-    camp,
-    player,
-)
+from . import physical, player, camp
 
 __all__ = [
     "Goal",

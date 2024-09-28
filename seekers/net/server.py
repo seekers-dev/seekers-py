@@ -6,15 +6,15 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 
 from .converters import *
-from .stubs.org.seekers.grpc.service.seekers_pb2 import *
-from .stubs.org.seekers.grpc.service.seekers_pb2_grpc import *
+from seekers.api.org.seekers.api.seekers_pb2 import *
+from seekers.api.org.seekers.api.seekers_pb2_grpc import *
 
 from .. import (
     game,
-    colors,
 )
-from ..player import GrpcClientPlayer
-from ..ids import *
+from ..graphics import colors
+from seekers.game.player import GrpcClientPlayer
+from seekers.net.ids import *
 
 
 class GrpcSeekersServicer(SeekersServicer):
@@ -45,8 +45,7 @@ class GrpcSeekersServicer(SeekersServicer):
             seekers=[seeker_to_grpc(s) for s in self.game.seekers.values()],
             goals=[goal_to_grpc(goal) for goal in self.game.goals],
 
-            passed_playtime=self.game.ticks,
-            seekers_changed=0
+            passed_playtime=self.game.ticks
         )
 
     def Command(self, request: CommandRequest, context: grpc.ServicerContext) -> CommandResponse | None:
@@ -60,7 +59,7 @@ class GrpcSeekersServicer(SeekersServicer):
                 context.abort(grpc.StatusCode.NOT_FOUND, f"Seeker with id {command.seeker_id!r} not found in the game.")
                 return
 
-            # check if seeker is owned by player
+            # check if the player owns seeker
             # noinspection PyTypeChecker
             if not isinstance(seeker.owner, GrpcClientPlayer) or seeker.owner.token != request.token:
                 context.abort(
@@ -73,7 +72,7 @@ class GrpcSeekersServicer(SeekersServicer):
             seeker.target = vector_to_seekers(command.target)
             seeker.magnet.strength = command.magnet
 
-        # wait for next game tick except if no commands were sent
+        # wait for the next game tick except if no commands were sent
         if request.commands:
             # noinspection PyUnboundLocalVariable
             seeker.owner.was_updated.set()

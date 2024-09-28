@@ -10,14 +10,9 @@ import threading
 import typing
 
 from .vector import *
-from .colors import *
-from .ids import *
-from . import (
-    seeker,
-    camp,
-    world,
-    goal,
-)
+from seekers.graphics.colors import *
+from seekers.net.ids import *
+from . import seeker, camp, goal, world
 
 __all__ = [
     "Player",
@@ -237,7 +232,7 @@ class LocalPlayer(Player):
             new_debug_drawings = []
 
             if debug:
-                from seekers.debug_drawing import add_debug_drawing_func_ctxtvar
+                from seekers.graphics.debug_drawing import add_debug_drawing_func_ctxtvar
                 add_debug_drawing_func_ctxtvar.set(new_debug_drawings.append)
 
             ai_out = self.ai.decide_function(*ai_input)

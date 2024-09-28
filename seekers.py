@@ -1,11 +1,9 @@
 from __future__ import annotations
 
 import argparse
-import logging
 import sys
 
 from seekers import *
-
 
 def parse_config_overrides(overrides: list[str]) -> dict[str, str]:
     parsed = {}

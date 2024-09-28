@@ -7,15 +7,9 @@ import math
 import pygame
 
 from .colors import *
-from .vector import *
-from .config import *
-from . import (
-    world,
-    seeker,
-    player,
-    camp,
-    goal,
-)
+from seekers.game.vector import *
+from seekers.game.config import *
+from seekers.game import player, seeker, camp, goal, world
 
 __all__ = [
     "GameRenderer",
