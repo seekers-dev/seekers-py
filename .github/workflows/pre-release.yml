@@ -24,7 +24,7 @@ jobs:
           sudo apt install protobuf-compiler
       
       - name: "Setup project"
-        run: bash setup.py
+        run: bash setup.sh
 
       - name: "Deploy binaries"
         run: bash deploy.sh
