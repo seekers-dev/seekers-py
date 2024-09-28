@@ -33,6 +33,11 @@ Players can join the Seekers Game in two ways:
 
 ### Installation
 
+You can install seekers by downloading prebuild wrapped binaries from Sourceforge or GitHub or by building it on your own. The prebuild wrapped binaries do not require python, but are only available for windows and linux. If you are looking for darwin/macOS, you still need to build it on your own.
+
+[![Download seekers-py](https://a.fsdn.com/con/app/sf-download-button)](https://sourceforge.net/projects/seekers-py/files/latest/download)
+
+For building it on your own:
 * Python 3.9 or higher is required (make sure it's in your PATH)
 1. Download the latest release and unpack it.
 2. Install the packages in [`requirements.txt`](requirements.txt). 
