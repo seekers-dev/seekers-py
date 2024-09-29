@@ -1,8 +1,8 @@
 @echo off
 
 echo Creating python archives ...
-powershell Compress-Archive ".\" "seekers-win32.zip"
-powershell Compress-Archive ".\seekers\api" "seekers-win32-stubs.zip"
+powershell Compress-Archive ".\*" "seekers-win32.zip"
+powershell Compress-Archive ".\seekers\api\*" "seekers-win32-stubs.zip"
 
 echo Install additional build requirements ...
 .\venv\Scripts\pip install -r requirements.txt cx_Freeze
