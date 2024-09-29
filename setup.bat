@@ -2,7 +2,7 @@ echo Setting up virtual environment ...
 python -m venv venv
 
 echo "Install requirements ..."
-.\venv\bin\pip install -r requirements.txt
+.\venv\Scripts\pip install -r requirements.txt
 
 echo "Update submodule ..."
 git submodule update --init --recursive --remote
